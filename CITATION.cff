@@ -8,12 +8,20 @@ authors:
     affiliation: "Centro de Investigación en Matemáticas, A.C., Unidad Mérida"
     orcid: "https://orcid.org/0000-0002-7739-4779"
     email: "rogelio.perez@cimat.mx"
+doi: "10.5281/zenodo.22654651"
 version: "1.0"
 date-released: "2026-09-08"
 # Licencia no estándar: uso libre para docencia, redistribución con permiso.
 # CFF solo admite identificadores SPDX en `license`, así que se enlaza el texto.
 license-url: "https://github.com/yoyontzin/Esquisse/blob/main/LICENCIA.md"
 repository-code: "https://github.com/yoyontzin/Esquisse"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.22654651"
+    description: "DOI de concepto: apunta siempre a la versión más reciente"
+  - type: doi
+    value: "10.5281/zenodo.22654652"
+    description: "DOI de esta versión (1.0)"
 abstract: >-
   Esquisse es un pizarrón digital para dar clase de matemáticas. Se escribe en
   una tableta con lápiz y la computadora proyecta, con la particularidad de que

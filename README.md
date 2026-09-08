@@ -1,5 +1,7 @@
 # Esquisse
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22654651.svg)](https://doi.org/10.5281/zenodo.22654651)
+
 Pizarrón digital para dar clase de matemáticas. Escribes a mano en una tableta
 y la computadora proyecta, con la particularidad de que **el material se revela
 por pasos**.
@@ -120,7 +122,11 @@ publicar obras derivadas requiere permiso escrito. Ver
 
 ## Cómo citarlo
 
-> Pérez-Buendía, J. Rogelio. *Esquisse: pizarrón digital para docencia
-> matemática.* 2026.
+> Pérez-Buendía, J. Rogelio. *Esquisse: a digital whiteboard for teaching
+> mathematics.* 2026. Zenodo. https://doi.org/10.5281/zenodo.22654651
+
+Ese DOI es el **de concepto**: apunta siempre a la versión más reciente. Si
+necesitas fijar una versión concreta, la 1.0 es
+[`10.5281/zenodo.22654652`](https://doi.org/10.5281/zenodo.22654652).
 
 Los metadatos completos están en [`CITATION.cff`](CITATION.cff).
