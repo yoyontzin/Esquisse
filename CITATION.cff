@@ -12,8 +12,8 @@ version: "1.0"
 date-released: "2026-09-08"
 # Licencia no estándar: uso libre para docencia, redistribución con permiso.
 # CFF solo admite identificadores SPDX en `license`, así que se enlaza el texto.
-license-url: "https://github.com/yoyontzin/Pizarron/blob/main/LICENCIA.md"
-repository-code: "https://github.com/yoyontzin/Pizarron"
+license-url: "https://github.com/yoyontzin/Esquisse/blob/main/LICENCIA.md"
+repository-code: "https://github.com/yoyontzin/Esquisse"
 abstract: >-
   Esquisse es un pizarrón digital para dar clase de matemáticas. Se escribe en
   una tableta con lápiz y la computadora proyecta, con la particularidad de que
