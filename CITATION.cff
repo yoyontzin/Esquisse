@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+title: "Esquisse: pizarrón digital para docencia matemática"
+message: "Si este software te sirve en un trabajo publicado o en material de curso, cítalo así."
+type: software
+authors:
+  - family-names: "Pérez-Buendía"
+    given-names: "J. Rogelio"
+    affiliation: "Centro de Investigación en Matemáticas, A.C., Unidad Mérida"
+    orcid: "https://orcid.org/0000-0002-7739-4779"
+    email: "rogelio.perez@cimat.mx"
+version: "1.0"
+date-released: "2026-09-08"
+# Licencia no estándar: uso libre para docencia, redistribución con permiso.
+# CFF solo admite identificadores SPDX en `license`, así que se enlaza el texto.
+license-url: "https://github.com/yoyontzin/Pizarron/blob/main/LICENCIA.md"
+repository-code: "https://github.com/yoyontzin/Pizarron"
+abstract: >-
+  Esquisse es un pizarrón digital para dar clase de matemáticas. Se escribe en
+  una tableta con lápiz y la computadora proyecta, con la particularidad de que
+  el material se revela por pasos: la clase se escribe entera de antemano, se
+  marcan puntos de corte, y en el aula cada tramo se suelta cuando toca, ya sea
+  de golpe o escribiéndose solo. Compone fórmulas en LaTeX, incluye una lupa
+  que permite escribir a mano con letra legible en pantalla, importa PDF para
+  anotar sobre notas previas, y exporta la clase a PDF por etapas. Los dos
+  aparatos se comunican directamente por la red local, sin internet, sin cuenta
+  y sin instalar nada en los dispositivos del alumnado, con una clave de sesión
+  que viaja dentro del código QR de emparejamiento. Nació como sustituto de
+  Doceri, retirado en 2022, y se usa en un curso de posgrado en teoría de
+  esquemas.
+keywords:
+  - enseñanza de las matemáticas
+  - pizarrón digital
+  - tecnología educativa
+  - LaTeX
+  - iPad
+  - Apple Pencil
+  - presentación progresiva
+  - educación a distancia

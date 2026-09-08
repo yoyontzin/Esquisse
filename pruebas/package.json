@@ -1,0 +1,17 @@
+{
+  "name": "pizarron-pruebas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Pruebas de la aplicación Pizarrón. Necesitan el servidor corriendo en el puerto 8777.",
+  "scripts": {
+    "prueba": "node prueba_general.mjs && node prueba_pencil.mjs",
+    "prueba:herramientas": "node prueba_herramientas.mjs",
+    "prueba:captura": "node prueba_captura.mjs",
+    "prueba:general": "node prueba_general.mjs",
+    "prueba:pencil": "node prueba_pencil.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

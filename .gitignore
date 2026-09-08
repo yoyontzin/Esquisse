@@ -1,0 +1,21 @@
+# Cuadernos de clase: son datos, no fuente
+cuadernos/
+
+# Pruebas
+pruebas/node_modules/
+pruebas/capturas/
+pruebas/package-lock.json
+pruebas/*.png
+# menos el PDF de entrada que las pruebas de fondo necesitan
+pruebas/*.pdf
+!pruebas/muestra_vertical.pdf
+
+# El paquete de la app se construye, no se versiona
+Esquisse.app/
+Pizarrón.app/
+crear_app_mac.command
+
+# Basura del sistema y de Python
+.DS_Store
+__pycache__/
+*.pyc
