@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 
 const ok=[],mal=[];
@@ -7,6 +8,7 @@ const nav=await chromium.launch(); const errs=[];
 const prof=await (await nav.newContext({viewport:{width:1180,height:820}})).newPage();
 prof.on('pageerror',e=>errs.push('prof: '+e.message));
 await prof.goto(BASE+'/?rol=control'); await prof.waitForTimeout(2500);
+await revisar(prof);
 await prof.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarTinta(); sync(); });
 await prof.fill('#miNombre','Rogelio Pérez-Buendía');
 await prof.dispatchEvent('#miNombre','change'); await prof.waitForTimeout(800);

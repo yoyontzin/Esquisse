@@ -1,4 +1,6 @@
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[],errs=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -22,13 +24,14 @@ const c=await ctx.newPage();
 c.on('pageerror',e=>errs.push('control: '+e.message));
 c.on('console',m=>{if(m.type()==='error')errs.push('consola: '+m.text());});
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(1500);
+await revisar(c);
 
 const b=await c.locator('#board').boundingBox();
 async function trazo(x0,y0,x1,y1){await c.mouse.move(b.x+x0,b.y+y0);await c.mouse.down();
   for(let i=1;i<=12;i++)await c.mouse.move(b.x+x0+(x1-x0)*i/12,b.y+y0+(y1-y0)*i/12);
   await c.mouse.up();await c.waitForTimeout(50);}
 
-await c.selectOption('#paper','verde'); await c.selectOption('#guide','cuadros'); await c.waitForTimeout(200);
+await elegir(c, 'paper', 'verde'); await elegir(c, 'guide', 'cuadros'); await c.waitForTimeout(200);
 for(let i=0;i<4;i++) await trazo(120+i*95,140,190+i*95,290);
 await c.click('#addStop');
 await c.click('#hlBtn'); await trazo(120,320,480,320);
@@ -66,7 +69,7 @@ await p.click('#espera'); await p.waitForTimeout(300);
 check('y se cierra con un toque', await p.evaluate(()=>!document.body.classList.contains('qr')));
 
 // guardado en el servidor
-await c.click('#srvSave'); await c.waitForTimeout(1200);
+await tocar(c, 'srvSave'); await c.waitForTimeout(1200);
 // degradación sin CDN
 const libs=await c.evaluate(()=>JSON.parse(JSON.stringify(libState)));
 check('la falta de CDN no deja basura guardada',

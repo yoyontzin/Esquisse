@@ -2,6 +2,7 @@
    «Siguiente stop» aparece el tramo de golpe. «Reproducir» lo escribe y se
    detiene en el stop, nunca sigue de largo hasta el final. */
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -9,6 +10,7 @@ const nav=await chromium.launch();
 const c=await (await nav.newContext({viewport:{width:1440,height:900}})).newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
+await revisar(c);
 
 const b=await c.locator('#board').boundingBox();
 for (let k=0;k<18;k++){

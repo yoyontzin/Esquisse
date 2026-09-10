@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const B = process.env.BASE || BASE;
 const ok=[],mal=[];
@@ -12,7 +13,7 @@ await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(3000);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarHistorial(); olvidarTinta(); sync(); });
 const b=await c.locator('#board').boundingBox();
 for (let k=0;k<3;k++){
-  if (k) { await c.click('#pAdd'); await c.waitForTimeout(400); }
+  if (k) { await tocar(c, 'pAdd'); await c.waitForTimeout(400); }
   for (let i=0;i<=k;i++){          // k+1 trazos, para reconocer la página
     await c.mouse.move(b.x+200+i*70, b.y+250); await c.mouse.down();
     await c.mouse.move(b.x+260+i*70, b.y+330); await c.mouse.up(); await c.waitForTimeout(60);
@@ -22,20 +23,20 @@ await c.waitForTimeout(800);
 const marcas = () => c.evaluate(()=>state.nb.pages.map(P=>P.items.length).join(','));
 check('tres páginas con 1, 2 y 3 trazos', await marcas()==='1,2,3', await marcas());
 await c.evaluate(()=>{ state.pi=2; sync(); }); await c.waitForTimeout(400);
-await c.click('#pIzq'); await c.waitForTimeout(700);
+await tocar(c, 'pIzq'); await c.waitForTimeout(700);
 check('la página se mueve una antes', await marcas()==='1,3,2', await marcas());
 check('y se va con ella', await c.evaluate(()=>state.pi)===1);
-await c.click('#pIzq'); await c.waitForTimeout(700);
+await tocar(c, 'pIzq'); await c.waitForTimeout(700);
 check('y otra vez', await marcas()==='3,1,2', await marcas());
-await c.click('#pDer'); await c.waitForTimeout(700);
+await tocar(c, 'pDer'); await c.waitForTimeout(700);
 check('también hacia el otro lado', await marcas()==='1,3,2', await marcas());
 await c.evaluate(()=>{ state.pi=0; sync(); }); await c.waitForTimeout(300);
-await c.click('#pIzq'); await c.waitForTimeout(400);
+await tocar(c, 'pIzq'); await c.waitForTimeout(400);
 check('la primera no se sale por la izquierda', await marcas()==='1,3,2', await marcas());
 
 // --- cada cuaderno su archivo ---
 await c.evaluate(()=>{ state.nb.name='Clase'; touch(); }); await c.waitForTimeout(3000);
-await c.click('#libBtn'); await c.waitForTimeout(500);
+await tocar(c, 'libBtn'); await c.waitForTimeout(500);
 await c.click('#libNew'); await c.waitForTimeout(900);
 await c.evaluate(()=>{ state.nb.name='Clase'; touch(); });
 await c.mouse.move(b.x+300,b.y+300); await c.mouse.down();

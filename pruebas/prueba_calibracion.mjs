@@ -1,4 +1,6 @@
 import { chromium } from 'playwright';
+const ok=[],mal=[];
+const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const nav=await chromium.launch();
 const c=await (await nav.newContext({viewport:{width:1180,height:820}, hasTouch:true})).newPage();
@@ -37,5 +39,13 @@ const r = await c.evaluate(()=>{
   return +(((it.pts[0].y-cam.y)*cam.s*esc + bb.top)).toFixed(1);
 });
 console.log(`\ntocado y=${yT.toFixed(1)}  dibujado y=${r}  error=${(r-yT).toFixed(1)} px`);
-console.log(Math.abs(r-yT)<2 ? 'OK: escribe donde apoyas la pluma' : 'FALLA');
+check('escribe donde apoyas la pluma', Math.abs(r-yT)<2, `error ${(r-yT).toFixed(1)} px`);
 await nav.close();
+
+/* Estas cinco pruebas imprimían su veredicto y salían con código cero pasara
+   lo que pasara: `correr.sh` las contaba en verde incluso escribiendo «SE
+   PIERDE EL TRABAJO». El 12 % del contrato era decorativo. */
+console.log(ok.map(s=>'  ok  '+s).join('\n'));
+if (mal.length) console.log(mal.map(s=>'  MAL '+s).join('\n'));
+console.log(`calibración: ${ok.length} correctas, ${mal.length} fallidas`);
+process.exit(mal.length ? 1 : 0);

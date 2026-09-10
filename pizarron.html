@@ -9,6 +9,16 @@
 <meta name="apple-mobile-web-app-title" content="Esquisse">
 <meta name="screen-orientation" content="landscape">
 <title>Esquisse</title>
+<!-- Identificación académica del programa. Va en la cabecera además de en el
+     panel «Acerca de» para que quede en el archivo aunque solo se mire el
+     fuente, y para que un buscador o un gestor de referencias lo lea. -->
+<meta name="author" content="J. Rogelio Pérez-Buendía">
+<meta name="description" content="Esquisse: pizarrón digital para dar clase de matemáticas, con revelado por pasos. J. Rogelio Pérez-Buendía, CIMAT Unidad Mérida.">
+<meta name="copyright" content="© 2026 J. Rogelio Pérez-Buendía. Versión de evaluación: uso docente libre, redistribución con permiso escrito.">
+<meta name="citation_title" content="Esquisse: a digital whiteboard for teaching mathematics">
+<meta name="citation_author" content="Pérez-Buendía, J. Rogelio">
+<meta name="citation_doi" content="10.5281/zenodo.22654651">
+<link rel="license" href="https://github.com/yoyontzin/Esquisse/blob/main/LICENCIA.md">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/icono.png">
 <link rel="icon" href="/icono.png">
@@ -64,9 +74,9 @@
   body.cintaLado #controls .sep{width:100%;height:1px;margin:3px 0}
   body.cintaLado #controls input[type=range]{width:100%}
 
-  /* Dos filas. La de herramientas nunca se desplaza: si se desplazara, al
+  /* Una sola fila. La de herramientas nunca se desplaza: si se desplazara, al
      tomar el marcador la pluma se iría fuera de la pantalla y habría que ir
-     a buscarla a media clase. La de documento sí, porque es de uso ocasional. */
+     a buscarla a media clase. Lo del documento vive detrás de cinco menús. */
   #bar{display:flex;flex-direction:column;gap:5px;padding:6px 11px;
     background:linear-gradient(180deg,#22262E,#1C1F25);
     border-bottom:1px solid var(--line);flex:none;
@@ -75,16 +85,20 @@
   /* apretada a propósito: la fila de herramientas tiene que caber de una
      sola línea o se come el alto del pizarrón */
   #barTools{flex-wrap:wrap;row-gap:5px;gap:7px}
-  #barTools .grp{gap:4px}
+  /* 3 px y no 4: con 4 la fila mide 1358 px y en un iPad de 1366 se parte
+     en dos alturas por catorce píxeles. */
+  #barTools .grp{gap:3px}
   #barTools button{padding:7px 9px}
   #barTools .swatch{width:23px;height:23px}
   #barTools input[type=range]{width:66px}
-  #barDoc{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
-    scrollbar-width:thin;scrollbar-color:var(--line) transparent;
-    padding-bottom:2px;border-top:1px solid rgba(255,255,255,.05);padding-top:5px}
-  #barDoc::-webkit-scrollbar{height:6px}
-  #barDoc::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
-  #barDoc::-webkit-scrollbar-track{background:transparent}
+  /* Los disparadores de menú van al final de la fila y siguen la misma regla
+     que el resto: con «Nombres» apagado enseñan solo el icono y el triángulo.
+     El nombre puesto los engorda 300 px y la fila se parte en dos alturas
+     justo en el iPad, que es donde el alto del pizarrón se nota. */
+  #barTools #menus{gap:3px}
+  #barTools .menuBtn{padding:6px 7px;gap:3px;font-size:12px}
+  #barTools .menuBtn .caret{font-size:9px;opacity:.55;margin-left:-1px}
+  #barTools .menuBtn.on{background:var(--sel);border-color:transparent;color:var(--sel-fg)}
   .barRow > *{flex:none}
   /* Las opciones de forma van en una barra flotante y no en la fila de
      herramientas: ahí crecían con cada botón nuevo hasta empujar la fila a
@@ -103,11 +117,30 @@
     box-shadow:0 10px 30px rgba(0,0,0,.5);align-items:center;max-width:min(94vw,660px);
     flex-wrap:wrap}
   body.conFondoPanel #panelFondo{display:flex}
+  /* Un menú abierto es un panel flotante más y comparte sitio con los otros,
+     así que abrir uno tiene que cerrar el resto: si no, las opciones de trazo
+     caen encima del menú y no se puede tocar nada de lo que hay debajo. */
+  .menuDesp{display:none;position:absolute;z-index:22;top:10px;left:50%;
+    transform:translateX(-50%);gap:7px;padding:9px 11px;
+    background:rgba(21,23,27,.96);border:1px solid var(--line);border-radius:14px;
+    backdrop-filter:saturate(180%) blur(24px);box-shadow:0 10px 30px rgba(0,0,0,.5);
+    align-items:center;flex-wrap:wrap;width:max-content;max-width:min(94vw,700px)}
+  /* `width:max-content` y no dejarlo al ancho de burbuja: colocado en el 50 %
+     un panel absoluto solo dispone de media caja y se partía en cuatro
+     renglones de 302 px, tan alto que tapaba el pizarrón entero. */
+  .menuDesp.abierto{display:flex}
+  .menuDesp > *{flex:none}
+  .menuDesp input[type=range]{width:108px}
+  .menuDesp .cnt{font-size:11px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--dim);font-weight:600}
+  body.proyeccion .menuDesp{display:none!important}
   /* Al cortar, la selección desaparece y con ella su barra: sin esto había
      que ir a buscar «Pegar» a la fila de abajo, que en modo clase ni existe.
      Se cortaba algo y no había manera de recuperarlo. */
+  /* `max` y no un valor fijo: a 76 px del borde caía dentro del dock, que
+     mide 113 cuando envuelve a dos filas. --sobreDock lo mide en vivo. */
   #pegarBar{display:none;position:fixed;z-index:86;left:50%;transform:translateX(-50%);
-    bottom:calc(76px + var(--safeB));gap:8px;padding:8px 10px;
+    bottom:max(calc(76px + var(--safeB)), var(--sobreDock, 0px));gap:8px;padding:8px 10px;
     background:rgba(21,23,27,.96);border:1px solid var(--line);border-radius:14px;
     backdrop-filter:saturate(180%) blur(24px);box-shadow:0 10px 30px rgba(0,0,0,.5);
     align-items:center}
@@ -131,6 +164,17 @@
     box-shadow:0 6px 22px rgba(0,0,0,.5);align-items:center;max-width:94vw}
   #opcTrazo > *{flex:none}
   #opcTrazo .cnt{font-size:12px;color:var(--dim);padding-right:4px}
+  #opcPuntero{display:none;position:absolute;z-index:20;left:50%;transform:translateX(-50%);
+    top:10px;gap:7px;padding:7px 9px;background:rgba(21,23,27,.95);
+    border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(12px);
+    box-shadow:0 6px 22px rgba(0,0,0,.5);align-items:center;flex-wrap:wrap;
+    width:max-content;max-width:94vw}
+  #opcPuntero > *{flex:none}
+  #opcPuntero .cnt{font-size:11px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--dim);font-weight:600}
+  #opcPuntero input[type=range]{width:96px}
+  #ptrColores{gap:4px}
+  body.conPuntero #opcPuntero{display:flex}
   body.conTrazo #opcTrazo{display:flex}
   /* con formas se enseñan las dos barras: la de forma baja para no taparse */
   body.conTrazo.conFormas #shapeRow{top:58px}
@@ -153,26 +197,30 @@
      destino tiene que ser generoso aunque el dibujo sea pequeño. */
   @media (pointer:coarse){
     button{min-height:44px;min-width:44px}
-    .swatch{width:32px;height:32px}
     #selBar button, #pegarBar button, #opcTrazo button, #shapeRow button{min-height:44px}
     /* `.mini` traía su propio min-width de 26px y ganaba por especificidad,
        así que los ± de grosor y velocidad y el de mover la cinta quedaban
        en 26 de ancho. Con el Pencil no ves el punto de contacto bajo la
        punta y se falla más que con el dedo. */
-    button.mini{min-width:44px}
+    /* Estas dos perdían por orden de fuente contra `button.mini{min-width:26px}`
+       y `input[type=color]{32x30}`, escritas más abajo en el archivo. Misma
+       especificidad y más tarde gana, así que el arreglo de los 44 px estaba
+       muerto sin que se notara. Con `body` delante ganan por especificidad,
+       sin depender de dónde queden escritas. */
+    body button.mini{min-width:44px}
+    body input[type=color]{width:44px;height:44px}
     /* Estos tampoco los cubría la regla de arriba, que solo mira `button`. */
     label.chk{min-height:44px}
     label.chk input{width:22px;height:22px}
     select, input[type=text]{min-height:44px}
-    input[type=color]{width:44px;height:44px}
   }
   button:has(svg){display:inline-flex;align-items:center;gap:6px}
   button .txt{white-space:nowrap}
   body.soloIconos #barTools button .txt,
-  body.soloIconos #barDoc button .txt,
   body.soloIconos #controls button .txt,
   body.soloIconos #selBar button .txt{display:none}
   body.soloIconos button:has(svg){padding:8px 10px}
+  body.soloIconos #barTools .menuBtn:has(svg){padding:6px 7px}
   /* la herramienta activa se reconoce de un vistazo desde lejos: en clase
      no hay tiempo de buscar cuál de los grises está un tono más claro */
   button:disabled{opacity:.38;cursor:default}
@@ -224,9 +272,13 @@
   /* Alto fijo, y el mismo valor que se le resta al lienzo. Sin alto propio la
      banda se estiraba hasta comerse media pantalla, porque su lienzo crece. */
   #lupa{--altoLupa:200px;
-    display:none;position:absolute;left:0;right:0;bottom:0;z-index:18;
+    display:none;position:absolute;left:0;right:0;bottom:var(--alzarLupa,0px);z-index:18;
     height:var(--altoLupa);
     background:var(--chrome-2);border-top:2px solid var(--live);
+    /* La sombra hacia arriba separa la banda de la hoja. Sin ella el papel
+       blanco de la lupa se lee como si la hoja siguiera hacia abajo, y no
+       sigue: es otra superficie mirando otro trozo. */
+    box-shadow:0 -10px 26px rgba(0,0,0,.45);
     flex-direction:column}
   body.conLupa{--altoLupa:200px}
   @media (max-height:700px){ #lupa, body.conLupa{--altoLupa:150px} }
@@ -243,8 +295,8 @@
   /* `calc` y no `height:auto`: un canvas es un elemento reemplazado, y con el
      alto en auto toma su tamaño intrínseco —el de sus atributos— e ignora el
      `bottom`. Se quedaba a pantalla completa con la banda encima. */
-  body.conLupa #board{top:0;bottom:var(--altoLupa,200px);
-    height:calc(100% - var(--altoLupa,200px))}
+  body.conLupa #board{top:0;bottom:calc(var(--altoLupa,200px) + var(--alzarLupa,0px));
+    height:calc(100% - var(--altoLupa,200px) - var(--alzarLupa,0px))}
   #board{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
 
   #side{width:224px;background:var(--chrome-2);border-left:1px solid var(--line);
@@ -272,7 +324,7 @@
   .pchip.on{border-color:var(--live);box-shadow:0 0 0 1px var(--live)}
   .pchip.on .pnum{color:var(--text)}
 
-  #ribbonWrap{background:var(--chrome-2);border-top:1px solid var(--line);padding:9px 11px 11px;flex:none}
+  #ribbonWrap{background:var(--chrome-2);border-top:1px solid var(--line);padding:9px 11px 11px;flex:none;position:relative}
   #ribbonHead{display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap}
   #cintaPos{margin-left:auto}
   body.cintaLado #cintaPos{margin-left:0}
@@ -284,25 +336,117 @@
   #controls{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;align-items:center}
 
   /* ---------- MODO CLASE ---------- */
+  /* ===== Los tres modos =====
+
+     Preparar una clase y darla son dos actividades distintas y necesitan
+     cosas distintas, y hasta la versión 1 solo había dos modos: todo, o modo
+     clase. Medido en un iPad de 11 pulgadas, con las barras de fábrica el
+     pizarrón se lleva el 45.7 % de la pantalla y las barras el 45.6 %.
+
+     Y los recortes parciales no devuelven nada, que es el hallazgo que
+     ordena esto. Ahí el pizarrón está limitado por el ALTO, así que quitar
+     los 224 px de ancho de la columna no devuelve un solo píxel; y al quitar
+     la cinta pasa a estar limitado por el ANCHO, así que tampoco. Quitando
+     las dos, +62 %. En el de 12.9 pulgadas es al revés, y quitando las dos,
+     +45 %. Hay que quitar el par o no quitar nada.
+
+     Los doce controles de la cinta son de reproducción, o sea del momento
+     contrario a escribir, y de la columna solo dos elementos son
+     interactivos: el resto es prosa que se lee una vez.
+
+     ESCRIBIR es el modo de fábrica: pizarrón, barra y una tira de 18 px que
+     dice por dónde vas y se puede arrastrar igual.
+     REVISAR devuelve la cinta entera y la columna, para marcar stops,
+     reordenar páginas y comprobar el encuadre.
+     CLASE es el dock y nada más. */
+  body.escribir #side{display:none}
+  body.escribir #ribbonHead, body.escribir #controls{display:none}
+  body.escribir #ribbonWrap{padding:0}
+  body.escribir #ribbon{height:18px;border-left:0;border-right:0;border-radius:0}
+  body.escribir #ribbonWrap{overflow:hidden}
+  body.escribir.cintaLado #ribbonWrap{width:18px}
+  body.escribir.cintaLado #ribbon{flex:1;min-height:0;height:auto;width:18px}
+  /* El asa: sin ella la tira no dice que se puede abrir, y tocarla directamente
+     ya significa otra cosa, que es escoger un cuadrito de la cinta. */
+  /* `body` delante y `min-height:0` a propósito: la regla táctil de 44 px lo
+     estiraba hacia arriba y se metía debajo de la barra, que se quedaba con
+     el toque. Aquí no aplica, porque el asa vive dentro de una tira de 18 px
+     y hay otros dos caminos al mismo sitio: la tecla R y «Vista › Revisar». */
+  body #cintaAsa{display:none;position:absolute;z-index:12;right:4px;top:0;
+    min-width:0;min-height:0;padding:0 12px;height:18px;line-height:16px;border-radius:0 0 0 9px;
+    font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;
+    background:var(--chrome-3);color:var(--dim);border:1px solid var(--line);
+    border-top:0;border-right:0;cursor:pointer;white-space:nowrap}
+  /* El asa se ve en los DOS modos. Solo en Escribir era una puerta de una
+     sola dirección: se abría la cinta y no había manera visible de volver a
+     cerrarla, porque la tecla R y «Vista › Revisar» no se ven. */
+  body:not(.clase):not(.proyeccion):not(.alumno) #cintaAsa{display:block}
+  /* En Revisar va en la cabecera de la cinta, junto a «Mover cinta», que es
+     donde la mano ya está mirando. */
+  body:not(.escribir) #cintaAsa{top:6px;right:11px;height:22px;line-height:20px;
+    border-radius:11px;border:1px solid var(--line)}
+  body:not(.escribir).cintaLado #cintaAsa{writing-mode:horizontal-tb;width:auto;
+    padding:0 10px;top:6px;right:8px}
+  body #cintaAsa:hover{color:var(--text);background:var(--chrome-2)}
+  body.escribir.cintaArriba #cintaAsa{top:auto;bottom:0;border-radius:9px 0 0 0;
+    border-top:1px solid var(--line);border-bottom:0}
+  body.escribir.cintaLado #cintaAsa{right:0;top:0;writing-mode:vertical-rl;
+    height:auto;width:18px;padding:9px 0;border-radius:0 0 0 9px}
+  body.clase #cintaAsa{display:none!important}
+  body.proyeccion #cintaAsa{display:none!important}
   body.clase #bar, body.clase #side, body.clase #ribbonWrap{display:none}
   body.clase #app{padding:0}
   #dock{display:none;position:fixed;z-index:40;left:10px;right:10px;
-    bottom:calc(14px + var(--safeB));background:rgba(21,23,27,.93);
+    bottom:var(--safeB);background:rgba(21,23,27,.93);
     border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);
     box-shadow:0 8px 28px rgba(0,0,0,.45);
-    overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
+    max-height:40vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     scrollbar-width:thin;scrollbar-color:var(--line) transparent}
   #dock::-webkit-scrollbar{height:5px}
   #dock::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
   body.clase #dock{display:block}
-  #dockInner{display:flex;gap:7px;padding:8px 10px;align-items:center;
-    width:max-content;margin:0 auto}
+  /* Envolver antes que esconder. Con `width:max-content` el dock nunca
+     envolvía: lo que no cabía quedaba fuera de la vista, alcanzable solo
+     desplazando de lado, y en clase nadie sabe que hay que desplazar. Se
+     llegaba a perder «Siguiente stop», que es el botón que conduce la clase.
+     Ahora, si no cabe, baja a una segunda fila y sigue estando todo. */
+  #dockInner{display:flex;flex-wrap:wrap;gap:7px;padding:8px 10px;
+    align-items:center;justify-content:center;margin:0 auto}
   #dockInner > *{flex:none}
   #dock button{padding:11px 14px;font-size:14px}
   #dock .swatch{width:30px;height:30px}
   #dockPos{font-size:12px;color:var(--dim);padding:0 4px;min-width:74px;text-align:center}
 
   /* ---------- BIBLIOTECA ---------- */
+  /* «Acerca de»: quién lo hizo, cómo se cita y en qué estado está. Un
+     programa académico que no dice de quién es no se puede citar, y uno que
+     no dice en qué estado está se usa como si estuviera terminado. */
+  #acercaWrap{display:none;position:fixed;inset:0;z-index:62;background:rgba(8,9,11,.75);
+    align-items:center;justify-content:center;padding:20px}
+  #acercaWrap.open{display:flex}
+  #acerca{background:var(--chrome-2);border:1px solid var(--line);border-radius:14px;
+    width:min(620px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
+  #acerca header{padding:16px 20px 13px;border-bottom:1px solid var(--line)}
+  #acerca header h2{margin:0;font-size:19px;font-weight:600;letter-spacing:-.01em}
+  #acerca header .ver{font-size:12px;color:var(--dim);margin-top:3px}
+  #acercaCuerpo{overflow-y:auto;padding:16px 20px;font-size:13px;line-height:1.55}
+  #acercaCuerpo h3{margin:17px 0 6px;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.11em;color:var(--dim);font-weight:700}
+  #acercaCuerpo h3:first-child{margin-top:0}
+  #acercaCuerpo p{margin:0 0 7px}
+  #acercaCuerpo a{color:var(--live);text-decoration:none}
+  #acercaCuerpo a:hover{text-decoration:underline}
+  #acercaCuerpo .dato{display:flex;gap:10px;padding:2px 0}
+  #acercaCuerpo .dato b{flex:0 0 92px;font-weight:500;color:var(--dim)}
+  #acercaCuerpo .dato span{flex:1;min-width:0;overflow-wrap:anywhere}
+  #acercaCita{background:#0E1013;border:1px solid var(--line);border-radius:9px;
+    padding:10px 12px;font-size:12px;line-height:1.5;overflow-wrap:anywhere;
+    font-family:ui-monospace,Menlo,monospace}
+  #acercaCuerpo .aviso{border-left:3px solid var(--stop);padding:2px 0 2px 11px;
+    margin:7px 0;color:#E6E8EC}
+  #acerca footer{padding:12px 20px;border-top:1px solid var(--line);
+    display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  #acercaPie{margin-left:auto;font-size:11px;color:var(--dim)}
   #libWrap{display:none;position:fixed;inset:0;z-index:60;background:rgba(8,9,11,.72);
     align-items:center;justify-content:center;padding:20px}
   #libWrap.open{display:flex}
@@ -349,6 +493,28 @@
   body.proyeccion #linkBtn{display:block}
   body.proyeccion.vacio #linkBtn{display:none}
   #linkBtn:hover{color:var(--text);background:rgba(42,46,54,.92)}
+  /* Mismo aspecto que «Enlazar iPad», a su izquierda. La proyección se comparte
+     en Zoom o Meet, y sin pantalla completa el público ve las pestañas y la
+     barra de direcciones del navegador. */
+  #projFull{display:none;position:fixed;z-index:88;
+    bottom:calc(16px + var(--safeB));right:calc(140px + var(--safeR));
+    background:rgba(30,33,39,.82);border:1px solid var(--line);color:var(--dim);
+    font-size:12px;padding:8px 12px;border-radius:9px;backdrop-filter:blur(8px);
+    align-items:center;gap:6px;line-height:1}
+  #projFull svg{width:15px;height:15px;flex:none}
+  body.proyeccion #projFull{display:inline-flex}
+  body.proyeccion.vacio #projFull{display:none}
+  #projFull:hover{color:var(--text);background:rgba(42,46,54,.92)}
+  /* Y los dos se apartan cuando nadie mueve el ratón: durante la clase la
+     proyección tiene que ser el pizarrón y nada más. Vuelven al primer
+     movimiento. */
+  /* Se atenúan, pero siguen respondiendo. Con `pointer-events:none` el botón
+     quedaba invisible y muerto: había que mover el ratón, esperar a que
+     reapareciera y entonces pulsar. Ahora el mismo clic que lo despierta
+     también le llega. */
+  body.proyeccion.quieta #linkBtn, body.proyeccion.quieta #projFull{
+    opacity:0;transition:opacity .6s}
+  body.proyeccion #linkBtn, body.proyeccion #projFull{transition:opacity .25s}
   #espera .cierra{font-size:12px;color:var(--dim);margin-top:4px}
   #espera h1{margin:0;font-size:clamp(20px,3.4vw,34px);font-weight:600;color:var(--text);
     letter-spacing:-.01em}
@@ -365,13 +531,44 @@
      sin dejar pasar el toque. Al caerse el enlace a media clase mataba los
      botones del centro del dock hasta que reconectara solo. Ahora va arriba
      y es transparente al dedo, como el toast. */
+  /* El informe de fallos. Monoespaciado y con barra propia: es texto que se
+     copia entero, no prosa que se lee en diagonal. */
+  #acFallosCaja{display:none}
+  #acFallosCaja.hay{display:block}
+  #acInforme{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;
+    line-height:1.45;white-space:pre-wrap;word-break:break-word;
+    background:var(--chrome-2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 10px;max-height:190px;overflow:auto;margin:7px 0;
+    -webkit-overflow-scrolling:touch;user-select:text}
+  #acQueHacia{width:100%;box-sizing:border-box;min-height:56px;resize:vertical;
+    font:inherit;padding:7px 9px;border-radius:9px;
+    background:var(--chrome-2);border:1px solid var(--line);color:inherit}
+  #acFallosBotones{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}
+  /* La cuenta va en el botón de Acerca porque estos errores no se ven: el
+     programa sigue pintando y quien lo prueba no se entera. */
+  #acercaBtn.conFallos{position:relative}
+  #acercaBtn.conFallos::after{content:attr(data-fallos);position:absolute;
+    top:-3px;right:-3px;min-width:15px;height:15px;padding:0 3px;box-sizing:border-box;
+    border-radius:999px;background:#B4404F;color:#fff;font-size:9px;font-weight:700;
+    line-height:15px;text-align:center;pointer-events:none}
   #avisoEnlace{display:none;position:fixed;z-index:85;left:50%;transform:translateX(-50%);
-    top:calc(10px + var(--safeT));background:#7A2430;border:1px solid #B4404F;
+    top:var(--topAviso, calc(10px + var(--safeT)));background:#7A2430;border:1px solid #B4404F;
     color:#FFE8EA;font-size:13px;padding:9px 14px;border-radius:10px;pointer-events:none;
     box-shadow:0 6px 22px rgba(0,0,0,.5);max-width:92vw;text-align:center}
   #avisoEnlace.visible{display:block}
+  /* Hermano del anterior, y con el mismo cuidado: deja pasar el toque, porque
+     al aparecer encima del dock mataba los botones del centro. */
+  #avisoProy{display:none;position:fixed;z-index:85;left:50%;transform:translateX(-50%);
+    top:var(--topAviso, calc(var(--safeT) + 8px));padding:7px 14px;border-radius:999px;
+    background:rgba(180,64,79,.95);color:#FFE8EA;font-size:12.5px;font-weight:600;
+    box-shadow:0 6px 20px rgba(0,0,0,.45);pointer-events:none;white-space:nowrap;
+    max-width:94vw;overflow:hidden;text-overflow:ellipsis}
+  #avisoProy.visible{display:block}
+  body.proyeccion #avisoProy, body.alumno #avisoProy{display:none!important}
   body.proyeccion #avisoEnlace{display:none!important}
-  #toast{position:fixed;z-index:80;bottom:calc(16px + var(--safeB));right:16px;
+  /* Arriba y no abajo: abajo caía dentro del rectángulo del dock en modo
+     clase y tapaba su extremo derecho mientras durase el mensaje. */
+  #toast{position:fixed;z-index:80;top:calc(16px + var(--safeT));right:16px;
     background:var(--chrome-3);border:1px solid var(--line);border-radius:9px;
     padding:9px 13px;font-size:12px;opacity:0;transition:opacity .25s;pointer-events:none}
   #toast.show{opacity:1}
@@ -426,7 +623,11 @@
   button.mini{padding:5px 8px;font-size:14px;line-height:1;min-width:26px}
   #widthDot{display:inline-block;background:var(--text);border-radius:50%;
     width:4px;height:4px;flex:none;transition:width .1s,height .1s}
-  #widthWrap{width:20px;display:grid;place-items:center}
+
+  /* La columna de la derecha se lleva 210 px de ancho, y en un iPad el
+     pizarrón está limitado por el ancho, no por el alto: quitarla es lo que
+     de verdad agranda el sitio para escribir. Se apaga desde Vista. */
+  body.sinLado #side{display:none}
   @media (max-width:980px){ #side{display:none} #bar{gap:8px;padding:6px 8px} }
   @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
 </style>
@@ -454,6 +655,7 @@
         <button id="lassoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.2 3"><path d="M12 3.6c5 0 8.6 2.9 8.6 6.5S17 16.6 12 16.6 3.4 13.7 3.4 10.1 7 3.6 12 3.6Z"/><path d="M8.6 16.2c-.4 2.4.3 4.3 2.2 4.3 1.5 0 2-1.3 1.2-2.2"/></svg><span class="txt">Lazo</span></button>
         <button id="fondoPanelBtn" title="Elegir el pizarrón o el papel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M3.2 15.2 8 10.6l4.2 4 3-2.6 4.6 4.2"/><circle cx="15.6" cy="8.6" r="1.5"/></svg><span class="txt">Fondo</span></button>
         <button id="pointBtn" class="point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><path d="M5.9 5.9 7.6 7.6M16.4 16.4l1.7 1.7M18.1 5.9 16.4 7.6M7.6 16.4 5.9 18.1"/></svg><span class="txt">Puntero</span></button>
+        <button id="lupaBtn" title="Lupa: escribe en grande abajo y cae pequeño en el pizarrón" aria-label="Lupa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.6" cy="10.6" r="6"/><path d="M15 15l5.4 5.4"/><path d="M8.2 10.6h4.8M10.6 8.2v4.8"/></svg><span class="txt">Lupa</span></button>
       </div>
       <div class="sep"></div>
       <div class="grp">
@@ -467,61 +669,17 @@
         <button id="rehacer" title="Vuelve a hacer lo deshecho"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 6.2 19.4 11l-4.8 4.8"/><path d="M19.4 11H9.8a5.2 5.2 0 0 0 0 10.4h2.4"/></svg><span class="txt">Rehacer</span></button>
         <button id="clase"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.6 3.6H4.8a1.2 1.2 0 0 0-1.2 1.2v3.8"/><path d="M15.4 3.6h3.8a1.2 1.2 0 0 1 1.2 1.2v3.8"/><path d="M8.6 20.4H4.8a1.2 1.2 0 0 1-1.2-1.2v-3.8"/><path d="M15.4 20.4h3.8a1.2 1.2 0 0 0 1.2-1.2v-3.8"/></svg><span class="txt">Modo clase</span></button>
       </div>
-    </div>
-    <!-- lo del documento: de uso ocasional, aquí sí puede desplazarse -->
-    <div class="barRow" id="barDoc">
-      <div class="grp">
-        <button id="libBtn" aria-label="Cuadernos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.2h11.4a2.4 2.4 0 0 1 2.4 2.4v13.2H7.4A2.4 2.4 0 0 1 5 17.4Z"/><path d="M5 17.4a2.4 2.4 0 0 1 2.4-2.4h11.4"/></svg><span class="txt">Cuadernos</span></button>
-        <input type="text" id="nbName" placeholder="Nombre del cuaderno" aria-label="Nombre del cuaderno">
-      </div>
       <div class="sep"></div>
-      <div class="grp">
-        <span class="lbl">Página</span>
-        <button id="pAdd" aria-label="Nueva"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="3.6" width="15.2" height="16.8" rx="2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg><span class="txt">Nueva</span></button>
-        <button id="pDup" aria-label="Duplicar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8.4" y="3.6" width="11.2" height="13.6" rx="1.8"/><path d="M15.6 20.4H6.2a1.8 1.8 0 0 1-1.8-1.8V7.4"/></svg><span class="txt">Duplicar</span></button>
-        <button id="pIzq" title="Mover esta página una antes" aria-label="◀ mover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 5.4 7 12l6.6 6.6"/><path d="M20 5.4v13.2"/></svg><span class="txt">◀ mover</span></button>
-        <button id="pDer" title="Mover esta página una después" aria-label="mover ▶"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 17 12l-6.6 6.6"/><path d="M4 5.4v13.2"/></svg><span class="txt">mover ▶</span></button>
-        <button id="pDel" aria-label="Borrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 6.6h14.8"/><path d="M9.4 6.6V4.8h5.2v1.8"/><path d="M6.6 6.6 7.6 20a1.4 1.4 0 0 0 1.4 1.2h6a1.4 1.4 0 0 0 1.4-1.2l1-13.4"/></svg><span class="txt">Borrar</span></button>
-      </div>
-      <div class="sep"></div>
-      <div class="grp">
-        <span class="lbl">Fondo</span><select id="paper" aria-label="Fondo"></select>
-        <span class="lbl">Guía</span><select id="guide" aria-label="Guía"></select>
-        <input type="range" id="gsize" min="6" max="90" step="1" value="34" aria-label="Pauta">
-        <span id="gsizeLbl" class="mono">34</span>
-        <label class="chk"><input type="checkbox" id="guideMine"> solo para mí</label>
-      </div>
-      <div class="sep"></div>
-      <div class="grp">
-        <button id="openProj" aria-label="Proyección"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.4" width="18.4" height="12" rx="2"/><path d="M8 20.4h8"/><path d="M12 16.4v4"/></svg><span class="txt">Proyección</span></button>
-        <button id="full" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9V4.8a1.2 1.2 0 0 1 1.2-1.2H9"/><path d="M15 3.6h4.2a1.2 1.2 0 0 1 1.2 1.2V9"/><path d="M20.4 15v4.2a1.2 1.2 0 0 1-1.2 1.2H15"/><path d="M9 20.4H4.8a1.2 1.2 0 0 1-1.2-1.2V15"/></svg><span class="txt">Pantalla completa</span></button>
-        <button id="pencilOnly" aria-label="Solo Pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3.6a2.1 2.1 0 0 1 3 3L9.6 15.2l-4 1 1-4Z"/><path d="M3.6 20.4h6"/></svg><span class="txt">Solo Pencil</span></button>
-        <button id="pasteBtn" aria-label="Pegar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="4.6" width="11.2" height="15.8" rx="1.8"/><path d="M9.4 4.6V3.4h5.2v1.2"/><path d="M9.6 11.4h4.8M9.6 15h4.8"/></svg><span class="txt">Pegar</span></button>
-        <button id="nombresBtn" title="Enseñar u ocultar el nombre de cada herramienta" aria-label="Nombres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 6.6h15.2M4.4 12h15.2M4.4 17.4h9.6"/></svg><span class="txt">Nombres</span></button>
-        <button id="reglasBtn" class="on" title="Reglas en los bordes y el aumento al que estás" aria-label="Reglas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="8.4" width="18.8" height="7.2" rx="1.4"/><path d="M7 8.4v3M11 8.4v4.4M15 8.4v3M19 8.4v4.4"/></svg><span class="txt">Reglas</span></button>
-        <button id="lupaBtn" title="Lupa: escribe en grande abajo y cae pequeño en el pizarrón" aria-label="Lupa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.6" cy="10.6" r="6"/><path d="M15 15l5.4 5.4"/><path d="M8.2 10.6h4.8M10.6 8.2v4.8"/></svg><span class="txt">Lupa</span></button>
-      </div>
-      <div class="sep"></div>
-      <div class="grp">
-        <input type="color" id="bgColor" value="#ffffff" title="Color de fondo" aria-label="Color de fondo">
-        <button id="bgClear">Fondo normal</button>
-        <button id="undoRafaga" title="Quita todo lo último que escribiste de un tirón" aria-label="Borrar lo último"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.2 4.6 11l4.8 4.8"/><path d="M4.6 11h9.6a5.2 5.2 0 0 1 0 10.4h-2.4"/><path d="M17 3.2l3.6 3.6M20.6 3.2 17 6.8"/></svg><span class="txt">Borrar lo último</span></button>
-        <button id="fit" aria-label="Encuadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.6" width="17.2" height="14.8" rx="2"/><path d="M8.4 9.6h7.2v4.8H8.4z"/></svg><span class="txt">Encuadrar</span></button>
-        <button id="fondoBtn" title="Mover, agrandar y encajar la imagen o el PDF del fondo" aria-label="Ajustar fondo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M8.6 9.4 12 12l-3.4 2.6"/><path d="M15.4 9.4 12 12l3.4 2.6"/></svg><span class="txt">Ajustar fondo</span></button>
-        <button id="capturar" title="Toma una foto de la pantalla y la deja de fondo para escribir encima" aria-label="Capturar diapositiva"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="5.6" width="18.4" height="13.6" rx="2"/><circle cx="12" cy="12.4" r="3.4"/><path d="M8.4 5.6 9.8 3.4h4.4l1.4 2.2"/></svg><span class="txt">Capturar diapositiva</span></button>
-        <button id="imgIns" aria-label="Imagen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><circle cx="8.6" cy="9.4" r="1.6"/><path d="M3.2 16.4 8.6 11l4 3.8 3-2.6 5.2 4.6"/></svg><span class="txt">Imagen</span></button>
-        <button id="imgBg" aria-label="Imagen de fondo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M3.2 15.6 8 11l4.2 4 3-2.6 5.6 5"/><path d="M3.2 19.6h17.6"/></svg><span class="txt">Imagen de fondo</span></button>
-        <button id="pdfIn" aria-label="Importar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 3.4H7a2 2 0 0 0-2 2v13.2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13.4 3.4V9H19"/><path d="M9 15.4h6"/></svg><span class="txt">Importar PDF</span></button>
-      </div>
-      <div class="sep"></div>
-      <div class="grp">
-        <button id="folder" aria-label="Carpeta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 6.6a1.8 1.8 0 0 1 1.8-1.8h3.6l2 2.4h8a1.8 1.8 0 0 1 1.8 1.8v8.6a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8Z"/></svg><span class="txt">Carpeta</span></button>
-        <button id="toFiles" aria-label="Guardar en Archivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v10.8"/><path d="M8 10.6 12 14.6l4-4"/><path d="M4.6 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h11.6a1.6 1.6 0 0 0 1.6-1.6v-2.2"/></svg><span class="txt">Guardar en Archivos</span></button>
-        <button id="srvSave" aria-label="Guardar en servidor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.4" width="17.2" height="6" rx="1.6"/><rect x="3.4" y="13.6" width="17.2" height="6" rx="1.6"/><path d="M7 7.4h.02M7 16.6h.02"/></svg><span class="txt">Guardar en servidor</span></button>
-        <button id="pdf" aria-label="PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 3.4H7a2 2 0 0 0-2 2v13.2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13.4 3.4V9H19"/><path d="M8.6 17.4v-4h1.4a1.2 1.2 0 0 1 0 2.4H8.6"/></svg><span class="txt">PDF</span></button>
-        <button id="rec" aria-label="Grabar video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.6" fill="currentColor" stroke="none"/></svg><span class="txt">Grabar video</span></button>
-        <button id="exp" aria-label="Exportar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.4V9.6"/><path d="M8 13.6 12 9.6l4 4"/><path d="M4.6 7.4V5.2a1.6 1.6 0 0 1 1.6-1.6h11.6a1.6 1.6 0 0 1 1.6 1.6v2.2"/></svg><span class="txt">Exportar</span></button>
-        <button id="imp" aria-label="Importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v10.8"/><path d="M8 10.6 12 14.6l4-4"/><path d="M4.6 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h11.6a1.6 1.6 0 0 0 1.6-1.6v-2.2"/></svg><span class="txt">Importar</span></button>
+      <!-- Los menús. La fila de documento eran 35 controles en 2314 px de ancho
+           de los que en un iPad se veía menos de la mitad, y ninguno se usa a
+           media frase: caben todos detrás de cinco nombres y la segunda fila
+           desaparece del alto de la pantalla. -->
+      <div class="grp" id="menus">
+        <button class="menuBtn" id="mArchivo" title="Cuaderno, guardar y sacar a PDF" aria-haspopup="true" aria-expanded="false" aria-label="Archivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 3.4H7a2 2 0 0 0-2 2v13.2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13.4 3.4V9H19"/></svg><span class="txt">Archivo</span><span class="caret" aria-hidden="true">▾</span></button>
+        <button class="menuBtn" id="mPagina" title="Añadir, duplicar, mover y borrar páginas" aria-haspopup="true" aria-expanded="false" aria-label="Página"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5.4" y="3.4" width="13.2" height="17.2" rx="2"/><path d="M8.8 8.6h6.4M8.8 12h6.4M8.8 15.4h4"/></svg><span class="txt">Página</span><span class="caret" aria-hidden="true">▾</span></button>
+        <button class="menuBtn" id="mFondo" title="Pizarrón, guía, color y encaje del fondo" aria-haspopup="true" aria-expanded="false" aria-label="Fondo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="17.2" height="17.2" rx="2"/><path d="M3.4 9.2h17.2M3.4 14.8h17.2M9.2 3.4v17.2M14.8 3.4v17.2"/></svg><span class="txt">Fondo</span><span class="caret" aria-hidden="true">▾</span></button>
+        <button class="menuBtn" id="mInsertar" title="Imágenes, PDF, captura y pegar" aria-haspopup="true" aria-expanded="false" aria-label="Insertar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 8.2v7.6M8.2 12h7.6"/></svg><span class="txt">Insertar</span><span class="caret" aria-hidden="true">▾</span></button>
+        <button class="menuBtn" id="mVista" title="Proyección, pantalla completa y rótulos" aria-haspopup="true" aria-expanded="false" aria-label="Vista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 12S5.8 5.6 12 5.6 21.6 12 21.6 12 18.2 18.4 12 18.4 2.4 12 2.4 12Z"/><circle cx="12" cy="12" r="2.8"/></svg><span class="txt">Vista</span><span class="caret" aria-hidden="true">▾</span></button>
       </div>
     </div>
   </div>
@@ -579,6 +737,22 @@
   <button id="chalkBtn" title="Trazo de gis, como en el pizarrón">Gis</button>
   <button id="suaveBtn" class="on" title="Quita el temblor de la mano al escribir">Mejorar letra</button>
 </div>
+<!-- Las opciones del puntero. Doceri dejaba elegir entre el punto de láser,
+     una flecha y una mano que señala, y de qué color: sobre una figura llena
+     de rectas el punto rojo se pierde, y la mano se ve desde el fondo del
+     salón. El tiempo es el que tarda en borrarse lo que se señala o escribe. -->
+<div id="opcPuntero">
+  <span class="cnt">Puntero</span>
+  <div class="grp" id="ptrColores"></div>
+  <div class="sep"></div>
+  <button id="ptrPunto" class="on" title="Punto de láser" aria-label="Punto de láser"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7.4" opacity=".5"/></svg><span class="txt">Punto</span></button>
+  <button id="ptrFlecha" title="Flecha" aria-label="Flecha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5.4 3.2 5.4 18.2 9.4 14.4 11.9 20.2 14.3 19.1 11.8 13.6 17.3 13.2Z"/></svg><span class="txt">Flecha</span></button>
+  <button id="ptrMano" title="Mano que señala" aria-label="Mano que señala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 3.2v9.4M9.4 7.4a1.6 1.6 0 0 1 3.2 0v5M12.6 9a1.6 1.6 0 0 1 3.2 0v4.4"/><path d="M15.8 11.4a1.6 1.6 0 0 1 3.2 0v4.8a4.6 4.6 0 0 1-4.6 4.6h-2.8a4.6 4.6 0 0 1-3.6-1.7l-3.4-4.3a1.7 1.7 0 0 1 2.5-2.3l2.3 1.9"/><path d="M9.4 4.8a1.6 1.6 0 0 0-3.2 0v7.8"/></svg><span class="txt">Mano</span></button>
+  <div class="sep"></div>
+  <span class="cnt">Se queda</span>
+  <input type="range" id="ptrVida" min="1" max="20" step="1" value="9" aria-label="Tiempo que se queda visible">
+  <span id="ptrVidaLbl" class="mono">9 s</span>
+</div>
 <div id="shapeRow">
   <span class="cnt">Forma</span>
   <button id="shLine" class="on">Recta</button>
@@ -599,14 +773,81 @@
   <button id="bgTodas" title="Aplica este encaje a todas las páginas con fondo">A todas</button>
   <button id="bgListo" class="primary">Listo</button>
 </div>
+
+<!-- Los menús del documento. Aquí vive todo lo que no se usa a media frase.
+     Antes era una segunda fila de 35 controles que medía 2314 px: en un iPad
+     se veían 1158 y el resto había que ir a buscarlo rodando la barra con el
+     dedo, justo donde se apoya la palma al escribir. Detrás de un nombre se
+     ven enteros, y la fila devuelve su alto al pizarrón. -->
+<div class="menuDesp" id="menuArchivo" role="menu" aria-label="Archivo">
+  <span class="cnt">Cuaderno</span>
+  <button id="libBtn" aria-label="Cuadernos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4.2h11.4a2.4 2.4 0 0 1 2.4 2.4v13.2H7.4A2.4 2.4 0 0 1 5 17.4Z"/><path d="M5 17.4a2.4 2.4 0 0 1 2.4-2.4h11.4"/></svg><span class="txt">Cuadernos</span></button>
+  <input type="text" id="nbName" placeholder="Nombre del cuaderno" aria-label="Nombre del cuaderno">
+  <div class="sep"></div>
+  <span class="cnt">Guardar</span>
+  <button id="folder" aria-label="Carpeta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 6.6a1.8 1.8 0 0 1 1.8-1.8h3.6l2 2.4h8a1.8 1.8 0 0 1 1.8 1.8v8.6a1.8 1.8 0 0 1-1.8 1.8H5.2a1.8 1.8 0 0 1-1.8-1.8Z"/></svg><span class="txt">Carpeta</span></button>
+  <button id="toFiles" aria-label="Guardar en Archivos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v10.8"/><path d="M8 10.6 12 14.6l4-4"/><path d="M4.6 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h11.6a1.6 1.6 0 0 0 1.6-1.6v-2.2"/></svg><span class="txt">Guardar en Archivos</span></button>
+  <button id="srvSave" aria-label="Guardar en servidor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.4" width="17.2" height="6" rx="1.6"/><rect x="3.4" y="13.6" width="17.2" height="6" rx="1.6"/><path d="M7 7.4h.02M7 16.6h.02"/></svg><span class="txt">Guardar en servidor</span></button>
+  <div class="sep"></div>
+  <div class="sep"></div>
+  <button id="acercaBtn" title="Autoría, cómo citarlo y estado del programa" aria-label="Acerca de"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6"/><path d="M12 11v5.4"/><path d="M12 7.8h.02"/></svg><span class="txt">Acerca de</span></button>
+  <span class="cnt">Sacar</span>
+  <button id="pdf" aria-label="PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 3.4H7a2 2 0 0 0-2 2v13.2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13.4 3.4V9H19"/><path d="M8.6 17.4v-4h1.4a1.2 1.2 0 0 1 0 2.4H8.6"/></svg><span class="txt">PDF</span></button>
+  <button id="rec" aria-label="Grabar video"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><circle cx="12" cy="12" r="3.6" fill="currentColor" stroke="none"/></svg><span class="txt">Grabar video</span></button>
+  <button id="exp" aria-label="Exportar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.4V9.6"/><path d="M8 13.6 12 9.6l4 4"/><path d="M4.6 7.4V5.2a1.6 1.6 0 0 1 1.6-1.6h11.6a1.6 1.6 0 0 1 1.6 1.6v2.2"/></svg><span class="txt">Exportar</span></button>
+  <button id="imp" aria-label="Importar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v10.8"/><path d="M8 10.6 12 14.6l4-4"/><path d="M4.6 16.6v2.2a1.6 1.6 0 0 0 1.6 1.6h11.6a1.6 1.6 0 0 0 1.6-1.6v-2.2"/></svg><span class="txt">Importar</span></button>
+</div>
+<div class="menuDesp" id="menuPagina" role="menu" aria-label="Página">
+  <button id="pAdd" aria-label="Nueva"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="3.6" width="15.2" height="16.8" rx="2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg><span class="txt">Nueva</span></button>
+  <button id="pDup" aria-label="Duplicar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="8.4" y="3.6" width="11.2" height="13.6" rx="1.8"/><path d="M15.6 20.4H6.2a1.8 1.8 0 0 1-1.8-1.8V7.4"/></svg><span class="txt">Duplicar</span></button>
+  <button id="pIzq" title="Mover esta página una antes" aria-label="◀ mover"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.6 5.4 7 12l6.6 6.6"/><path d="M20 5.4v13.2"/></svg><span class="txt">◀ mover</span></button>
+  <button id="pDer" title="Mover esta página una después" aria-label="mover ▶"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.4 5.4 17 12l-6.6 6.6"/><path d="M4 5.4v13.2"/></svg><span class="txt">mover ▶</span></button>
+  <button id="pDel" aria-label="Borrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.6 6.6h14.8"/><path d="M9.4 6.6V4.8h5.2v1.8"/><path d="M6.6 6.6 7.6 20a1.4 1.4 0 0 0 1.4 1.2h6a1.4 1.4 0 0 0 1.4-1.2l1-13.4"/></svg><span class="txt">Borrar</span></button>
+  <div class="sep"></div>
+  <button id="undoRafaga" title="Quita todo lo último que escribiste de un tirón" aria-label="Borrar lo último"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.2 4.6 11l4.8 4.8"/><path d="M4.6 11h9.6a5.2 5.2 0 0 1 0 10.4h-2.4"/><path d="M17 3.2l3.6 3.6M20.6 3.2 17 6.8"/></svg><span class="txt">Borrar lo último</span></button>
+</div>
+<div class="menuDesp" id="menuFondo" role="menu" aria-label="Fondo">
+  <span class="cnt">Pizarrón</span>
+  <select id="paper" aria-label="Fondo"></select>
+  <span class="cnt">Guía</span>
+  <select id="guide" aria-label="Guía"></select>
+  <input type="range" id="gsize" min="6" max="90" step="1" value="34" aria-label="Pauta">
+  <span id="gsizeLbl" class="mono">34</span>
+  <label class="chk"><input type="checkbox" id="guideMine"> solo para mí</label>
+  <div class="sep"></div>
+  <input type="color" id="bgColor" value="#ffffff" title="Color de fondo" aria-label="Color de fondo">
+  <button id="bgClear">Fondo normal</button>
+  <div class="sep"></div>
+  <button id="fondoBtn" title="Mover, agrandar y encajar la imagen o el PDF del fondo" aria-label="Ajustar fondo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M8.6 9.4 12 12l-3.4 2.6"/><path d="M15.4 9.4 12 12l3.4 2.6"/></svg><span class="txt">Ajustar fondo</span></button>
+</div>
+<div class="menuDesp" id="menuInsertar" role="menu" aria-label="Insertar">
+  <button id="imgIns" aria-label="Imagen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><circle cx="8.6" cy="9.4" r="1.6"/><path d="M3.2 16.4 8.6 11l4 3.8 3-2.6 5.2 4.6"/></svg><span class="txt">Imagen</span></button>
+  <button id="imgBg" aria-label="Imagen de fondo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M3.2 15.6 8 11l4.2 4 3-2.6 5.6 5"/><path d="M3.2 19.6h17.6"/></svg><span class="txt">Imagen de fondo</span></button>
+  <button id="pdfIn" aria-label="Importar PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 3.4H7a2 2 0 0 0-2 2v13.2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9Z"/><path d="M13.4 3.4V9H19"/><path d="M9 15.4h6"/></svg><span class="txt">Importar PDF</span></button>
+  <button id="capturar" title="Toma una foto de la pantalla y la deja de fondo para escribir encima" aria-label="Capturar diapositiva"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="5.6" width="18.4" height="13.6" rx="2"/><circle cx="12" cy="12.4" r="3.4"/><path d="M8.4 5.6 9.8 3.4h4.4l1.4 2.2"/></svg><span class="txt">Capturar diapositiva</span></button>
+  <div class="sep"></div>
+  <button id="pasteBtn" aria-label="Pegar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="4.6" width="11.2" height="15.8" rx="1.8"/><path d="M9.4 4.6V3.4h5.2v1.2"/><path d="M9.6 11.4h4.8M9.6 15h4.8"/></svg><span class="txt">Pegar</span></button>
+</div>
+<div class="menuDesp" id="menuVista" role="menu" aria-label="Vista">
+  <button id="openProj" aria-label="Proyección"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.4" width="18.4" height="12" rx="2"/><path d="M8 20.4h8"/><path d="M12 16.4v4"/></svg><span class="txt">Proyección</span></button>
+  <button id="full" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9V4.8a1.2 1.2 0 0 1 1.2-1.2H9"/><path d="M15 3.6h4.2a1.2 1.2 0 0 1 1.2 1.2V9"/><path d="M20.4 15v4.2a1.2 1.2 0 0 1-1.2 1.2H15"/><path d="M9 20.4H4.8a1.2 1.2 0 0 1-1.2-1.2V15"/></svg><span class="txt">Pantalla completa</span></button>
+  <button id="fit" aria-label="Encuadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.6" width="17.2" height="14.8" rx="2"/><path d="M8.4 9.6h7.2v4.8H8.4z"/></svg><span class="txt">Encuadrar</span></button>
+  <div class="sep"></div>
+  <button id="revisarBtn" title="Revisar: enseña la cinta de trazos entera y la columna (tecla R)" aria-label="Revisar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="10" rx="1.8"/><path d="M3.2 18h17.6M6.4 21h11.2"/></svg><span class="txt">Revisar</span></button>
+  <button id="ladoBtn" class="on" title="La columna de la derecha con la vista de la clase y las miniaturas" aria-label="Columna lateral"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.4" width="17.2" height="15.2" rx="2"/><path d="M15.2 4.4v15.2"/></svg><span class="txt">Columna</span></button>
+  <button id="nombresBtn" title="Enseñar u ocultar el nombre de cada herramienta" aria-label="Nombres"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.4 6.6h15.2M4.4 12h15.2M4.4 17.4h9.6"/></svg><span class="txt">Nombres</span></button>
+  <button id="reglasBtn" class="on" title="Reglas en los bordes y el aumento al que estás" aria-label="Reglas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.6" y="8.4" width="18.8" height="7.2" rx="1.4"/><path d="M7 8.4v3M11 8.4v4.4M15 8.4v3M19 8.4v4.4"/></svg><span class="txt">Reglas</span></button>
+  <button id="pencilOnly" aria-label="Solo Pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3.6a2.1 2.1 0 0 1 3 3L9.6 15.2l-4 1 1-4Z"/><path d="M3.6 20.4h6"/></svg><span class="txt">Solo Pencil</span></button>
+</div>
     </div>
     <div id="side">
       <h3>Proyección</h3>
       <canvas id="projPreview" width="960" height="540"></canvas>
-      <p class="note">Lo que ven ellos. Tu zoom no la mueve y las guías pueden quedarse de tu lado.</p>
+      <p class="note">Lo que ven ellos. Tu zoom no la mueve y las guías pueden quedarse de tu lado.<br>Para Zoom o Meet, abre <b>Proyección</b> y ponla a pantalla completa: comparte esa ventana.</p>
       <h3>Páginas</h3>
       <div id="pageStrip"></div>
       <h3>Estado</h3>
+      <div class="stat"><span>Cuaderno</span><b id="stCuaderno">Cuaderno sin título</b></div>
       <div class="stat"><span>Trazos</span><b id="nStrokes">0</b></div>
       <div class="stat"><span>Stops</span><b id="nStops">0</b></div>
       <div class="stat"><span>Zoom</span><b id="zoomLbl">100%</b></div>
@@ -619,7 +860,7 @@
       <h3>Para la clase</h3>
       <p class="note" id="urlAlumnos">—</p>
       <h3>Atajos</h3>
-      <p class="note">Espacio o →: siguiente stop.<br>S: poner stop.<br>P: puntero.<br>C: modo clase.<br>Dos dedos: mover y acercar.<br>Con «Editar aquí» activo, Retroceso borra el trazo anterior.</p>
+      <p class="note">Espacio o →: siguiente stop.<br>S: poner stop.<br>P: puntero; al tomarlo salen su color, su forma y su duración.<br>C: modo clase.<br>Dos dedos: mover y acercar.<br>Con «Editar aquí» activo, Retroceso borra el trazo anterior.</p>
     </div>
   </div>
 
@@ -630,6 +871,7 @@
       <button id="cintaPos" class="mini" aria-label="Mover la cinta de sitio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="2.2"/><path d="M3.2 15.4h17.6"/></svg><span class="txt">Mover cinta</span></button>
     </div>
     <div id="ribbon"><canvas id="ribbonCanvas"></canvas></div>
+    <button id="cintaAsa" title="Abrir la cinta de trazos y la columna (tecla R)">Cinta</button>
     <div id="controls">
       <button id="addStop" aria-label="Poner stop aquí"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v16.8"/><path d="M12 3.6h7.2l-1.8 3 1.8 3H12"/></svg><span class="txt">Poner stop aquí</span></button>
       <button id="delStop" aria-label="Quitar stop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.6v16.8"/><path d="M16.4 7.4l4.4 4.4M20.8 7.4l-4.4 4.4"/></svg><span class="txt">Quitar stop</span></button>
@@ -655,22 +897,23 @@
 
 <div id="dock"><div id="dockInner">
   <div class="grp" id="dockColors"></div>
-  <button id="dPen" class="on">Pluma</button>
-  <button id="dHl">Marcador</button>
-  <button id="dErase">Goma</button>
-  <button id="dShape">Forma</button>
-  <button id="dPoint" class="point">Puntero</button>
+  <button id="dPen" class="on" title="Pluma" aria-label="Pluma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3.6a2.1 2.1 0 0 1 3 3L9.6 15.2l-4 1 1-4 8.6-8.6Z"/><path d="M13.4 5.4 16.6 8.6"/><path d="M4.5 20.5h15"/></svg></button>
+  <button id="dHl" title="Marcador" aria-label="Marcador"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3.8 20.2 11l-7.4 7.4H8.2L4.6 14.8 13 3.8Z"/><path d="M4.5 20.6h15"/></svg></button>
+  <button id="dErase" title="Goma" aria-label="Goma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m14.4 4.1 5.5 5.5a1.6 1.6 0 0 1 0 2.3l-6.2 6.2H8.3l-4.2-4.2a1.6 1.6 0 0 1 0-2.3l7.9-7.5a1.6 1.6 0 0 1 2.4 0Z"/><path d="m9.1 8 6.6 6.6"/><path d="M4.5 20.6h15"/></svg></button>
+  <button id="dShape" title="Forma" aria-label="Forma"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="11" height="11" rx="1.6"/><circle cx="15.2" cy="15.2" r="5.4"/></svg></button>
+  <button id="dPoint" class="point" title="Puntero" aria-label="Puntero"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><path d="M5.9 5.9 7.6 7.6M16.4 16.4l1.7 1.7M18.1 5.9 16.4 7.6M7.6 16.4 5.9 18.1"/></svg></button>
+  <button id="dPencil" title="Solo el Pencil dibuja" aria-label="Solo Pencil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15.2 3.6a2.1 2.1 0 0 1 3 3L9.6 15.2l-4 1 1-4Z"/><path d="M3.6 20.4h6"/></svg></button>
   <div class="sep"></div>
-  <button id="dUndo" title="Deshacer">Deshacer</button>
-  <button id="dRedo" title="Rehacer">Rehacer</button>
+  <button id="dUndo" title="Deshacer" aria-label="Deshacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.2 4.6 11l4.8 4.8"/><path d="M4.6 11h9.6a5.2 5.2 0 0 1 0 10.4h-2.4"/></svg></button>
+  <button id="dRedo" title="Rehacer" aria-label="Rehacer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 6.2 19.4 11l-4.8 4.8"/><path d="M19.4 11H9.8a5.2 5.2 0 0 0 0 10.4h2.4"/></svg></button>
   <div class="sep"></div>
-  <button id="dPPrev" aria-label="Página anterior">◀ pág</button>
+  <button id="dPPrev" title="Página anterior" aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 5.4 8 12l6.6 6.6"/></svg></button>
   <span id="dockPos" class="mono">1/1 · s0</span>
-  <button id="dPNext" aria-label="Página siguiente">pág ▶</button>
+  <button id="dPNext" title="Página siguiente" aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 5.4 16 12l-6.6 6.6"/></svg></button>
   <div class="sep"></div>
-  <button id="dPrev">◀ stop</button>
-  <button id="dPlay">▶</button>
-  <button id="dNext" class="primary">Siguiente stop ▶</button>
+  <button id="dPrev" title="Stop anterior" aria-label="Stop anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M17.6 5.4 8.2 12l9.4 6.6Z"/><path d="M6 5v14"/></svg></button>
+  <button id="dPlay" title="Escribir hasta el stop" aria-label="Escribir hasta el stop">▶</button>
+  <button id="dNext" class="primary" title="Saltar al siguiente stop">Siguiente stop ▶</button>
   <div class="sep"></div>
   <!-- Marcar un corte en modo clase solo se podía con la tecla S, y dando
        clase con el Pencil no hay teclado a mano. -->
@@ -680,6 +923,73 @@
 </div></div>
 <button id="barPeek">Herramientas</button>
 
+<div id="acercaWrap" role="dialog" aria-label="Acerca de Esquisse">
+  <div id="acerca">
+    <header>
+      <h2>Esquisse</h2>
+      <div class="ver" id="acercaVer"></div>
+    </header>
+    <div id="acercaCuerpo">
+      <h3>Autoría</h3>
+      <div class="dato"><b>Autor</b><span id="acAutor"></span></div>
+      <div class="dato"><b>ORCID</b><span id="acOrcid"></span></div>
+      <div class="dato"><b>Filiación</b><span id="acFil"></span></div>
+      <div class="dato"><b>Correo</b><span id="acMail"></span></div>
+      <div class="dato"><b>Página</b><span id="acWeb"></span></div>
+
+      <h3>Cómo citarlo</h3>
+      <div id="acercaCita"></div>
+      <div class="dato" style="margin-top:8px"><b>DOI</b><span id="acDoi"></span></div>
+      <div class="dato"><b>Manual</b><span id="acManual"></span></div>
+      <div class="dato"><b>Código</b><span id="acRepo"></span></div>
+
+      <h3>Estado del programa</h3>
+      <p class="aviso" id="acEstado"></p>
+      <p class="aviso">Versión de <b>evaluación</b>. Se entrega tal cual, sin
+        garantía de ninguna clase y sin soporte.</p>
+      <p class="aviso">El tráfico va <b>en claro</b> por la red local, que es lo
+        que permite que la tableta se conecte sin instalar nada. Para dar clase
+        es suficiente, y es el mismo modelo de una impresora compartida.
+        <b>No lo expongas a internet.</b></p>
+
+      <h3>Licencia y registro</h3>
+      <p id="acCopy"></p>
+      <p id="acIndautor"></p>
+      <p>Usarlo para dar clase es libre, incluso en cursos por los que se cobre
+        matrícula, sin pedir permiso ni avisar. Redistribuirlo, venderlo o
+        publicar obras derivadas requiere permiso escrito del autor.</p>
+
+      <h3>Pedir una evaluación institucional</h3>
+      <p>Esta copia lleva marca de evaluación en el pizarrón y en el pie de
+        cada hoja exportada. Para una licencia de uso, una evaluación
+        institucional o una copia sin marca, escribe a
+        <span id="acPedir"></span> diciendo la institución, el curso y para
+        cuántas personas.</p>
+
+      <h3>Informar de un fallo</h3>
+      <p>Esta versión está a revisión y los informes son justo lo que hace
+        falta. Nada se manda solo: abajo tienes el informe entero, lo copias y
+        lo pegas donde quieras.</p>
+      <label for="acQueHacia" style="display:block;margin-bottom:4px">
+        <b>¿Qué estabas haciendo?</b></label>
+      <textarea id="acQueHacia" placeholder="Escribía una fórmula y al pasar de página se borró lo anterior."></textarea>
+      <div id="acFallosCaja">
+        <p class="aviso" id="acFallosCuantos"></p>
+      </div>
+      <div id="acInforme"></div>
+      <div id="acFallosBotones">
+        <button id="acCopiarInforme" class="primary">Copiar el informe</button>
+        <button id="acIssue">Abrirlo en el repositorio</button>
+        <button id="acCorreo">Mandarlo por correo</button>
+      </div>
+    </div>
+    <footer>
+      <button id="acercaCopiar" class="primary">Copiar la cita</button>
+      <button id="acercaCerrar">Cerrar</button>
+      <span id="acercaPie"></span>
+    </footer>
+  </div>
+</div>
 <div id="libWrap" role="dialog" aria-label="Cuadernos">
   <div id="lib">
     <header>
@@ -736,8 +1046,10 @@
   <p class="cierra">Toca en cualquier parte para cerrar. Para volver a verlo, usa «Enlazar iPad» abajo a la derecha.</p>
 </div>
 <button id="linkBtn">Enlazar iPad</button>
+<button id="projFull" title="Pantalla completa, para compartir en Zoom o Meet" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 3.6H3.6v4.8"/><path d="M15.6 3.6h4.8v4.8"/><path d="M15.6 20.4h4.8v-4.8"/><path d="M8.4 20.4H3.6v-4.8"/></svg><span class="txt">Pantalla completa</span></button>
 <button id="verTodo">Ver todo</button>
 <div id="avisoEnlace">Sin enlace: lo que escribas no está llegando a la proyección</div>
+<div id="avisoProy">La proyección se desconectó: la clase está viendo una pantalla congelada</div>
 <div id="toast"></div>
 <input type="file" id="fileIn" accept=".json" style="display:none">
 <input type="file" id="imgIn" accept="image/*" style="display:none">
@@ -800,6 +1112,56 @@ const r2 = v => Math.round(v*100)/100;
    completo y nada más, así que lo que escribes no se le mueve nunca.
    El encuadre de proyección deja de ser una cámara que se pasea y pasa a
    ser este marco fijo: camProj.s = proj.width/MARCO.w. */
+/* Identificación del programa. Un solo sitio, porque estos datos salen en el
+   panel «Acerca de», en la cita para copiar y en la cabecera del documento, y
+   tres copias a mano se desincronizan a la primera versión nueva. */
+const APP = {
+  nombre:    'Esquisse',
+  /* Etiqueta interna del estado del código, no una versión publicada: la única
+     que existe en Zenodo con DOI es la 1.0. La condición de las tres clases
+     sale del plan de la versión 2, no de ninguna norma externa. */
+  version:   '2.0 rc1',
+  estado:    'candidata, sin publicar: la que tiene DOI es la 1.0',
+  autor:     'J. Rogelio Pérez-Buendía',
+  orcid:     '0000-0002-7739-4779',
+  filiacion: 'Centro de Investigación en Matemáticas, A.C., Unidad Mérida',
+  correo:    'rogelio.perez@cimat.mx',
+  web:       'https://www.cimat.mx/~rogelio.perez',   // la institucional
+  repo:      'https://github.com/yoyontzin/Esquisse',
+  doi:       '10.5281/zenodo.22654651',           // el de concepto, el que se cita
+  doiVersion:'10.5281/zenodo.22654652',           // el de la 1.0 publicada
+  publicada: '1.0',
+  anio:      2026,
+  /* Registro ante el Instituto Nacional del Derecho de Autor. El trámite está
+     en curso y consta en la página institucional del autor y en el comprobante
+     de CIMAT del 7 de septiembre de 2026. Vacío porque todavía no hay número:
+     cuando lo otorguen se pone aquí y sale solo en el panel, en la marca del
+     pizarrón y en el pie del PDF. No inventar uno.
+
+     Para referencia, los tres programas del autor que ya lo tienen:
+       p-adic GRN Suite     03-2026-050609473000-01   6 de mayo de 2026
+       PadicMIDI Toolkit    03-2026-050609502700-01   6 de mayo de 2026
+       SEIR-Yucatán         03-2026-050609530400-01   6 de mayo de 2026 */
+  indautor:  '',
+  evaluacion: true,
+};
+/* La marca de la copia, corta, para el pie del PDF y la esquina del pizarrón.
+   Una copia de evaluación que circula sin decir de quién es acaba siendo de
+   nadie. */
+function marcaCorta(){
+  return `${APP.nombre} ${APP.version} · evaluación · © ${APP.anio} ${APP.autor}`
+       + (APP.indautor ? ` · INDAUTOR ${APP.indautor}` : '');
+}
+/* La cita en el formato canónico del autor, con el nombre completo y no las
+   iniciales: todas sus publicaciones usan «J. Rogelio Pérez-Buendía», y
+   abreviarlo fragmenta el perfil en MathSciNet, zbMATH y Scholar. Zenodo
+   renderiza APA en su caja de «Cite as», que sí abrevia; por eso esta. */
+function citaTexto(){
+  return `${APP.autor} (${APP.anio}). ${APP.nombre}: a digital whiteboard for `
+       + `teaching mathematics (versión ${APP.publicada}) [software]. `
+       + `Zenodo. https://doi.org/${APP.doi}`;
+}
+
 const MARCO = {w:1920, h:1080};
 const PROJ_W = 960, PROJ_H = 540;          // canvas de vista previa, 16:9
 const CAM_PROJ = () => ({x:0, y:0, s:PROJ_W/MARCO.w});
@@ -816,19 +1178,55 @@ const newNotebook = name => ({ id:uid(), name:name||'Cuaderno sin título',
 
 const state = { nb:newNotebook(), pi:0 };
 const ui = { slot:0, hlSlot:0, width:3, wErase:6, tool:'pen', shape:'line', dash:false, chalk:false, suave:true, reglas:true,
-             pencilOnly:false, guideMine:false, speed:1.5, texSize:26, texMode:true, editar:false };
+             pencilOnly:false, guideMine:false, speed:1.5, texSize:26, texMode:true, editar:false,
+             ptrColor:0, ptrForma:'punto', ptrVida:9000 };
 /* La estela del puntero. `trazos` es una lista de trazos, no uno solo: así se
    puede escribir una ecuación de varios trazos y que se borre sola al cabo de
    unos segundos, sin tocar el documento ni entrar en los stops. Antes era una
    única polilínea y levantar la pluma borraba lo anterior. */
 const ptr = { x:0, y:0, t:0, on:false, trazos:[] };
-const PTR_RASTRO = 9000;   // lo que tarda en desvanecerse, en milisegundos
+/* Doceri dejaba señalar con un punto de láser, con una flecha o con una mano.
+   Cada una sirve para algo distinto: el punto para un renglón, la flecha para
+   un vértice y la mano para que se vea desde el fondo del salón. El color
+   importa porque sobre una figura llena de rectas el rojo se pierde. */
+const PTR_COLORES = [
+  {n:'Rojo',    rgb:'255,77,94'},
+  {n:'Ámbar',   rgb:'255,176,32'},
+  {n:'Verde',   rgb:'61,220,132'},
+  {n:'Cian',    rgb:'58,200,240'},
+  {n:'Violeta', rgb:'176,140,255'},
+  {n:'Blanco',  rgb:'245,247,250'},
+];
+/* El dibujo de cada forma, con la punta en el origen de su caja de 24. Van
+   como camino de SVG y no a mano con arcos porque así se leen y se corrigen
+   mirándolos, que es como se dibujaron. */
+const PTR_FORMAS = {
+  flecha: {tip:[2,1], d:'M2 1 L2 18.4 L6.6 14 L9.6 20.6 L12.4 19.3 L9.5 13 L15.8 12.6 Z'},
+  mano:   {tip:[8.5,1.5], d:'M8.5 1.5a1.8 1.8 0 0 1 1.8 1.8V10.6a1.5 1.5 0 0 1 3 0V12'
+                            +'a1.5 1.5 0 0 1 3 0V17.6a4.4 4.4 0 0 1-4.4 4.4h-3.2'
+                            +'a4.8 4.8 0 0 1-3.7-1.8L2.2 15.2a1.7 1.7 0 0 1 2.5-2.3'
+                            +'l2 1.6V3.3a1.8 1.8 0 0 1 1.8-1.8Z'},
+};
+const PTR_CAMINOS = {};    // Path2D compilados, uno por forma
+function ptrCamino(f){
+  if (!PTR_CAMINOS[f]) PTR_CAMINOS[f] = new Path2D(PTR_FORMAS[f].d);
+  return PTR_CAMINOS[f];
+}
+function ptrRGB(){ return (PTR_COLORES[ui.ptrColor] || PTR_COLORES[0]).rgb; }
+/* Con el punto de láser la cabeza se va antes que la estela: si se quedara
+   tanto como lo escrito, al bajar la mano seguiría marcando un sitio que ya no
+   interesa. Un tercio reproduce lo que había antes de que esto fuera
+   regulable. La flecha y la mano no tienen estela, así que ahí la cabeza es
+   todo y «se queda» significa lo que dice. */
+function vidaCabeza(){
+  return ui.ptrForma === 'punto' ? Math.max(1200, ui.ptrVida*.3) : ui.ptrVida;
+}
 const PTR_PAUSA = 350;     // silencio que separa un trazo del siguiente
 const PTR_MAX = 1400;      // tope de puntos vivos, por si alguien no suelta
 function ptrPuntos(){ let n=0; for (const t of ptr.trazos) n += t.length; return n; }
 function ptrLimpiar(ahora){
   for (const t of ptr.trazos){
-    while (t.length && ahora - t[0].t > PTR_RASTRO) t.shift();
+    while (t.length && ahora - t[0].t > ui.ptrVida) t.shift();
   }
   while (ptr.trazos.length && !ptr.trazos[0].length) ptr.trazos.shift();
   return ptrPuntos();
@@ -1046,10 +1444,54 @@ function ajustarSiCambio(){
   fitAll();
   return true;
 }
+/* Dos piezas del cromo flotan sobre el pizarrón y ninguna tiene alto fijo:
+   el dock envuelve a dos filas según el ancho, y la barra de herramientas
+   también. Se miden en vivo y se publican como variables de CSS.
+
+   El dock tapaba 113 de los 200 px de la banda de la lupa en modo clase, o
+   sea más de la mitad de donde se está escribiendo. Se sube la lupa, no se
+   mueve el dock: el dock vive abajo porque ahí llega el pulgar.
+
+   Y el aviso de «sin enlace» tapaba siete controles de la fila de
+   herramientas —la pluma, el grosor, tres marcadores— justo cuando algo va
+   mal y quieres ver qué tienes puesto. Ni arriba del todo ni abajo: abajo
+   caía dentro del dock, que es por lo que en su día se subió. */
+function medirCromo(){
+  const cuerpo = document.body;
+  const alto = e => { if (!e) return 0; const r = e.getBoundingClientRect();
+                      return r.height > 0 ? r : 0; };
+
+  const bar = alto(document.getElementById('bar'));
+  if (bar) cuerpo.style.setProperty('--topAviso', Math.round(bar.bottom + 8) + 'px');
+  else cuerpo.style.removeProperty('--topAviso');
+
+  const dock = alto(document.getElementById('dock'));
+  const wrap = document.getElementById('boardWrap');
+  let alzar = 0;
+  if (dock && wrap){
+    const w = wrap.getBoundingClientRect();
+    alzar = Math.max(0, Math.round(w.bottom - dock.top + 6));
+  }
+  /* La barra de pegar flota sobre la ventana, no sobre el pizarrón, así que
+     se mide contra el borde de abajo de la pantalla y no contra el lienzo. */
+  cuerpo.style.setProperty('--sobreDock',
+    (dock ? Math.max(0, Math.round(innerHeight - dock.top + 8)) : 0) + 'px');
+  const antes = cuerpo.style.getPropertyValue('--alzarLupa');
+  const ahora = alzar + 'px';
+  if (antes !== ahora){
+    cuerpo.style.setProperty('--alzarLupa', ahora);
+    // el lienzo acaba de cambiar de alto: sin esto el trazo cae desplazado
+    if (enLupa()) setTimeout(()=>{ fitAll(); dibujarLupa(); }, 20);
+  }
+}
 if (window.ResizeObserver){
   new ResizeObserver(()=>ajustarSiCambio()).observe(board);
+  const ojo = new ResizeObserver(()=>medirCromo());
+  for (const id of ['dock','bar']){
+    const e = document.getElementById(id); if (e) ojo.observe(e);
+  }
 }
-window.addEventListener('resize', ()=>setTimeout(fitAll,60));
+window.addEventListener('resize', ()=>setTimeout(()=>{ medirCromo(); fitAll(); },60));
 window.addEventListener('orientationchange', ()=>setTimeout(fitAll,220));
 
 /* ===================== papel ===================== */
@@ -1126,7 +1568,66 @@ function drawMarco(ctx, cam){
     ctx.moveTo(ex+sx*c, ey); ctx.lineTo(ex, ey); ctx.lineTo(ex, ey+sy*c);
   }
   ctx.stroke();
+
+  /* Banda de margen por dentro del borde.
+
+     El marco de arriba solo sirve mientras el borde se ve. Acercado al 170 %,
+     que es como se escribe de verdad, los cuatro bordes quedan fuera de la
+     pantalla y no hay manera de saber cuánto queda antes de que se acabe la
+     hoja: se llega al final a media derivación y hay que rehacerla.
+
+     La banda ocupa las últimas 70 unidades de pizarrón por cada lado y se
+     degrada hacia dentro, así que al entrar en ella la mano ya sabe que el
+     borde está cerca aunque no lo vea. Solo del lado del profesor: la clase
+     ve el marco lleno y esto sería ruido. */
+  const B = 70 * cam.s;                       // el ancho de la banda en pantalla
+  if (B > 6){
+    const franjas = [
+      [M.x, M.y, B, M.h, 'h', 1],                       // izquierda
+      [M.x+M.w-B, M.y, B, M.h, 'h', -1],                // derecha
+      [M.x, M.y, M.w, B, 'v', 1],                       // arriba
+      [M.x, M.y+M.h-B, M.w, B, 'v', -1],                // abajo
+    ];
+    ctx.save();
+    ctx.beginPath(); ctx.rect(M.x, M.y, M.w, M.h); ctx.clip();
+    for (const [x,y,w,h,eje,dir] of franjas){
+      const g = eje === 'h'
+        ? ctx.createLinearGradient(dir>0 ? x : x+w, 0, dir>0 ? x+w : x, 0)
+        : ctx.createLinearGradient(0, dir>0 ? y : y+h, 0, dir>0 ? y+h : y);
+      g.addColorStop(0, 'rgba(255,176,32,.16)');
+      g.addColorStop(1, 'rgba(255,176,32,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x, y, w, h);
+    }
+    ctx.restore();
+  }
   ctx.restore();
+
+  /* Marca de la copia de evaluación, abajo a la izquierda y solo del lado del
+     profesor. La clase nunca la ve: la proyección no llama a `drawMarco`, y un
+     rótulo de licencia delante del grupo sería ruido para ellos y ninguna
+     protección para él.
+
+     Va aquí y no en el papel porque el papel se cachea, y esto tiene que
+     seguir a la vista aunque se cambie de pizarrón. */
+  if (APP.evaluacion){
+    /* Con placa detrás, igual que el rótulo del aumento. Decidir el color por
+       el papel no vale: la marca cae sobre la pared oscura cuando la hoja está
+       encuadrada y sobre el papel cuando está acercada, así que un color solo
+       falla en la mitad de los casos. */
+    ctx.save();
+    ctx.font = '600 9px ui-sans-serif, system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    const txt = marcaCorta();
+    const w = ctx.measureText(txt).width;
+    const h = 15, x = 7, y = board._cssH - 7 - h;
+    ctx.fillStyle = 'rgba(10,12,15,.55)';
+    if (ctx.roundRect){ ctx.beginPath(); ctx.roundRect(x, y, w+13, h, 7); ctx.fill(); }
+    else ctx.fillRect(x, y, w+13, h);
+    ctx.fillStyle = 'rgba(230,232,236,.62)';
+    ctx.fillText(txt, x+6.5, y + h/2 + .5);
+    ctx.restore();
+  }
 }
 /* Reglas en los bordes y un rótulo con el aumento. Acercado, es fácil perder
    la cuenta de en qué parte del pizarrón se está escribiendo: las marcas dan
@@ -1181,6 +1682,50 @@ const cacheTinta = new Map();
    recolorear, cambiar de página, abrir otro cuaderno. Va en el sello, así que
    invalida lo rasterizado sin tener que recordar limpiar cada capa. */
 let docVer = 0;
+/* ===================== los tres modos =====================
+   «escribir» es el de fábrica y deja el pizarrón con la barra y una tira de
+   18 px. «revisar» devuelve la cinta entera y la columna. «clase» es el dock.
+   El porqué de que sean estos tres, y los números que lo justifican, están
+   junto a las reglas de CSS. */
+function ponerModo(m, callado){
+  const antes = modoActual();
+  if (m === 'clase'){ document.body.classList.remove('escribir'); setClase(true); }
+  else {
+    if (document.body.classList.contains('clase')) setClase(false);
+    document.body.classList.toggle('escribir', m === 'escribir');
+  }
+  marcarModo();
+  medirCromo();
+  if (!callado) store.set('modo', m === 'clase' ? antes : m);   // a clase se entra y se sale
+  /* La rejilla cambia de tamaño: hay que rehacer los lienzos y reencuadrar, o
+     el trazo cae desplazado respecto de donde se apoya la pluma. */
+  setTimeout(()=>{ fitAll(); encuadrar(); sync(); }, 0);
+}
+function modoActual(){
+  if (document.body.classList.contains('clase')) return 'clase';
+  return document.body.classList.contains('escribir') ? 'escribir' : 'revisar';
+}
+function marcarModo(){
+  const m = modoActual();
+  const b = document.getElementById('revisarBtn');
+  if (b) b.classList.toggle('on', m === 'revisar');
+  const a = document.getElementById('cintaAsa');
+  if (a){
+    a.textContent = m === 'revisar' ? 'Ocultar' : 'Cinta';
+    a.title = m === 'revisar'
+      ? 'Ocultar la cinta y la columna para escribir con más sitio (tecla R)'
+      : 'Enseñar la cinta de trazos y la columna (tecla R)';
+  }
+}
+function alternarRevisar(){
+  ponerModo(modoActual() === 'revisar' ? 'escribir' : 'revisar');
+}
+
+let fantasmasTimer = null;
+function pedirFantasmasAlDia(){
+  if (fantasmasTimer) return;
+  fantasmasTimer = setTimeout(()=>{ fantasmasTimer = null; drawBoard(); }, 110);
+}
 function olvidarTinta(){ docVer++; }
 /* Invalida una sola clave de render. `olvidarTinta` sube `docVer`, que va en
    el sello, así que tumba la caché de TODAS las claves: usarlo para refrescar
@@ -1310,9 +1855,16 @@ function loadImg(key, src){
        una fórmula recién insertada se quedaba invisible hasta que un
        acercamiento o un trazo nuevo tumbaran la caché por otro motivo. */
     olvidarTinta();
-    // ahora sí toca rehacer las miniaturas que esperaban esta imagen
-    if (typeof miniFirma !== 'undefined')
-      state.nb.pages.forEach((_,i)=>{ if (!miniFirma.has(i)) refrescarMini(i); });
+    /* Solo la página de esta imagen, no todas las que estén sin firmar.
+       Barriendo todas, importar cuarenta páginas rasterizaba 860 miniaturas en
+       vez de 40: cuando cargaba la primera repintaba las 39 restantes, cuando
+       cargaba la segunda las 38, y así. Varios segundos de interfaz congelada
+       justo después de importar un PDF. */
+    if (typeof miniFirma !== 'undefined' && key.startsWith('bg:')){
+      const id = key.slice(3);
+      const i = state.nb.pages.findIndex(P => P.bgImg && P.bgImg.id === id);
+      if (i >= 0) refrescarMini(i);
+    }
     sync();
   };
   img.onerror = () => { e.ok = false; };
@@ -1349,6 +1901,24 @@ function drawText(ctx, it, cam, dark){
   ctx.restore();
 }
 
+/* El trazo en vivo se pinta suelto sobre el lienzo, fuera de las capas, así que
+   no pasa por el recorte que `renderTo` aplica al componer. Sin esto, escribir
+   pasándose del borde se veía sobre la pared y desaparecía al levantar la
+   pluma: parecía que la app se comía el trazo. No se lo comía, quedaba guardado
+   e invisible, ocupando un cuadrito de la cinta y corriendo los stops. */
+function conRecorte(ctx, cam, pintar){
+  const M = marcoRect(cam), d = DPR();
+  ctx.save();
+  /* El recorte se define en píxeles de dispositivo, pero cada camino llega con
+     su propia transformación puesta: el trazo liso viene escalado por DPR y la
+     capa del resaltador viene en identidad. Se guarda la que haya, se recorta
+     en identidad, y se devuelve tal cual antes de pintar. */
+  const antes = ctx.getTransform ? ctx.getTransform() : null;
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.beginPath(); ctx.rect(M.x*d, M.y*d, M.w*d, M.h*d); ctx.clip();
+  if (antes) ctx.setTransform(antes);
+  try{ pintar(); } finally { ctx.restore(); }
+}
 /* dos capas: resaltador debajo, tinta encima */
 function renderTo(ctx, cam, w, h, count, partial, key, showGuide, dpr, page, marca){
   const P = page||pg(), d = dpr||1, dark = darkOf(P);
@@ -1362,15 +1932,53 @@ function renderTo(ctx, cam, w, h, count, partial, key, showGuide, dpr, page, mar
   const m0 = (marca === undefined || marca === null) ? Infinity : marca;
   const sello = [W, H, cam.x, cam.y, cam.s, dark, docVer, state.pi].join('|');
   const prev = cacheTinta.get(key);
-  // vale reaprovechar si nada movió y ningún elemento ya pintado cambia de capa
-  const sirve = prev && prev.sello === sello && !partial && count >= prev.n &&
-                (prev.m === m0 || (prev.m >= prev.n && m0 >= prev.n));
-  const desde = sirve ? prev.n : 0;
-  const cap = k => { const c = layer(key+':'+k, W, H).getContext('2d');
+  /* El corte de revelado NO entra en el sello, y esa es la diferencia con la
+     versión 1. Allí entraba, así que moverlo tiraba las cuatro capas y
+     re-rasterizaba la página entera. Medido con cuatrocientos trazos:
+     escribiendo costaba 0.05 ms por cuadro y revelando 15.5, más que no tener
+     caché, y se disparaba en «escribir hasta el stop», al arrastrar la cinta,
+     al saltar entre stops y en cada trazo insertado con «Editar aquí».
+
+     Ahora hay dos grupos con vidas distintas. Las capas de lo revelado
+     guardan [0, corte) y crecen por añadido mientras el corte avance, que es
+     lo que hace la reproducción. Las de fantasma guardan [corte, n) y sí hay
+     que rehacerlas cuando el corte se mueve, porque una capa rasterizada no
+     se puede des-dibujar; pero solo llevan lo que aún no se ha revelado, que
+     durante la reproducción va menguando hasta cero. */
+  const base = prev && prev.sello === sello && !partial && count >= prev.n;
+  const nTotal = Math.min(count, P.items.length);
+  const m = Math.min(m0, nTotal);
+  const previoR = prev ? Math.min(prev.n, prev.m) : 0;
+  // lo revelado se reaprovecha mientras el corte no retroceda
+  const sirveR = !!base && m0 >= prev.m;
+  /* Las capas de fantasma sí hay que rehacerlas cuando el corte avanza, y eso
+     cuesta lo que quede por revelar: al empezar la reproducción, la página
+     entera. Pero el fantasma es una vista previa tenue que solo ve el profesor
+     y que la clase no recibe nunca, así que no hace falta al día en cada
+     cuadro. Se rehace como mucho diez veces por segundo.
+
+     Mientras tanto la capa lleva de más los elementos que se acaban de
+     revelar, y por eso el orden de composición pone el fantasma DEBAJO de lo
+     revelado: la tinta revelada, que es opaca, los tapa exactamente. De paso
+     se lee mejor, porque lo ya revelado deja de quedar por debajo de la
+     previsualización de lo que aún no toca.
+
+     Al saltar la puesta al día se pide un repintado, así que en cuanto la
+     reproducción para, los fantasmas convergen. */
+  const AL_DIA_FANTASMAS = 90;
+  const ahoraF = performance.now();
+  const reusarG = !!base && prev.gM !== undefined && prev.gM <= m &&
+                  (m === prev.gM || ahoraF - prev.gT < AL_DIA_FANTASMAS);
+  const sirveG = reusarG;
+  const gM = reusarG ? prev.gM : m;
+  const gT = reusarG ? prev.gT : ahoraF;
+  if (reusarG && m !== prev.gM) pedirFantasmasAlDia();
+  const cap = (k, limpiar) => { const c = layer(key+':'+k, W, H).getContext('2d');
     c.setTransform(d,0,0,d,0,0);
-    if (!sirve) c.clearRect(0,0,w,h);
+    if (limpiar) c.clearRect(0,0,w,h);
     return c; };
-  const hc = cap('hl'), ic = cap('ink'), hg = cap('hlg'), ig = cap('inkg');
+  const hc = cap('hl', !sirveR), ic = cap('ink', !sirveR);
+  const hg = cap('hlg', !sirveG), ig = cap('inkg', !sirveG);
   const put = (it, upto, fantasma) => {
     // Defensa en profundidad: un hueco en la lista no puede tumbar el
     // repintado. Si el render revienta, el pizarrón deja de dibujarse entero.
@@ -1391,10 +1999,10 @@ function renderTo(ctx, cam, w, h, count, partial, key, showGuide, dpr, page, mar
     if (it.erase){ strokePath(H_,it,cam,upto,dark); strokePath(I_,it,cam,upto,dark); return; }
     strokePath(it.hl ? H_ : I_, it, cam, upto, dark);
   };
-  const list = P.items, n = Math.min(count, list.length);
-  const m = m0;
-  for (let i=desde;i<n;i++) put(list[i], undefined, i >= m);
-  cacheTinta.set(key, {sello, n, m});
+  const list = P.items, n = nTotal;
+  for (let i = (sirveR ? previoR : 0); i < Math.min(n, m); i++) put(list[i], undefined, false);
+  for (let i = (sirveG ? Math.max(prev.n, gM) : gM); i < n; i++) put(list[i], undefined, true);
+  cacheTinta.set(key, {sello, n, m: m0, gM, gT});
   // el elemento a medio escribir cambia en cada cuadro: nunca entra a la caché
   if (partial && list[n]){ put(list[n], partial, false); cacheTinta.delete(key); }
   const aHl = dark ? .55 : .40;
@@ -1403,10 +2011,10 @@ function renderTo(ctx, cam, w, h, count, partial, key, showGuide, dpr, page, mar
   // no trazo por trazo: por trazo los solapes se acumulan y salen bandas.
   const M = marcoRect(cam);
   ctx.beginPath(); ctx.rect(M.x*d, M.y*d, M.w*d, M.h*d); ctx.clip();
-  ctx.globalAlpha = aHl;      ctx.drawImage(layer(key+':hl',W,H),0,0);
   ctx.globalAlpha = aHl*.42;  ctx.drawImage(layer(key+':hlg',W,H),0,0);
-  ctx.globalAlpha = 1;        ctx.drawImage(layer(key+':ink',W,H),0,0);
+  ctx.globalAlpha = aHl;      ctx.drawImage(layer(key+':hl',W,H),0,0);
   ctx.globalAlpha = .26;      ctx.drawImage(layer(key+':inkg',W,H),0,0);
+  ctx.globalAlpha = 1;        ctx.drawImage(layer(key+':ink',W,H),0,0);
   ctx.restore();
 }
 
@@ -1445,6 +2053,7 @@ function encajarTodas(modo){
 
 /* ===================== geometría de elementos ===================== */
 function bounds(it){
+  if (!it) return null;          // un hueco no puede tumbar el repintado
   if (it.k === 't' || it.k === 'i')
     return {x0:it.x, y0:it.y, x1:it.x+(it.w||it.size||40), y1:it.y+(it.h||it.size||40)};
   let x0=1e18,y0=1e18,x1=-1e18,y1=-1e18;
@@ -1453,11 +2062,16 @@ function bounds(it){
 }
 function selBounds(){
   if (!sel.length) return null;
-  let b = {x0:1e18,y0:1e18,x1:-1e18,y1:-1e18};
-  for (const i of sel){ const q = bounds(items()[i]);
+  /* La selección se guarda por índice, y hay caminos que quitan elementos sin
+     tocarla: tocar un cuadrito de la cinta y después «Borrar anterior» deja
+     `sel` apuntando fuera de la lista. Antes eso lanzaba dentro del dibujado
+     y el pizarrón se quedaba a medio pintar, sin recuperarse. */
+  let b = {x0:1e18,y0:1e18,x1:-1e18,y1:-1e18}, hubo = false;
+  for (const i of sel){ const q = bounds(items()[i]); if (!q) continue;
+    hubo = true;
     b.x0=Math.min(b.x0,q.x0); b.y0=Math.min(b.y0,q.y0);
     b.x1=Math.max(b.x1,q.x1); b.y1=Math.max(b.y1,q.y1); }
-  return b;
+  return hubo ? b : null;
 }
 function moveItem(it, dx, dy){
   if (it.k==='t' || it.k==='i'){ it.x+=dx; it.y+=dy; return; }
@@ -1506,21 +2120,24 @@ function hitsPoly(it, poly){
 function drawPointer(ctx, cam){
   if (!ptr.on) return;
   const ahora = performance.now();
-  // La estela: cada tramo se apaga según su edad, así que se borra sola
-  // sin tocar el documento. Va antes del punto para quedar por debajo.
-  if (ptr.trazos.length){
+  const rgb = ptrRGB();
+  /* La estela: cada tramo se apaga según su edad, así que se borra sola sin
+     tocar el documento. Va antes del punto para quedar por debajo. Y es solo
+     del punto de láser: la flecha y la mano son para señalar, y arrastrando
+     una cinta detrás no se lee ni la una ni la otra. */
+  if (ui.ptrForma === 'punto' && ptr.trazos.length){
     ctx.save(); ctx.lineCap='round'; ctx.lineJoin='round';
     const grosor = Math.max(2.5, 7*Math.min(cam.s/escalaEncuadre(),2));
     for (const trazo of ptr.trazos){
       for (let i=1;i<trazo.length;i++){
         const p0=trazo[i-1], p1=trazo[i];
         const edad = ahora - p1.t;
-        if (edad > PTR_RASTRO) continue;
+        if (edad > ui.ptrVida) continue;
         // se mantiene entero un buen rato y se apaga al final, para que dé
         // tiempo a leer lo escrito antes de que desaparezca
-        const v = 1 - edad/PTR_RASTRO;
+        const v = 1 - edad/ui.ptrVida;
         const a = v > .45 ? 1 : v/.45;
-        ctx.strokeStyle = `rgba(255,77,94,${(.78*a).toFixed(3)})`;
+        ctx.strokeStyle = `rgba(${rgb},${(.78*a).toFixed(3)})`;
         ctx.lineWidth = grosor*(.55+.45*a);
         ctx.beginPath();
         ctx.moveTo((p0.x-cam.x)*cam.s,(p0.y-cam.y)*cam.s);
@@ -1530,16 +2147,32 @@ function drawPointer(ctx, cam){
     }
     ctx.restore();
   }
-  const age = ahora-ptr.t; if (age>2600) return;   // el punto rojo sí se va antes
-  const a = age<1600 ? 1 : 1-(age-1600)/1000;
+  const vc = vidaCabeza();
+  const age = ahora-ptr.t; if (age>vc) return;    // la cabeza sí se va antes
+  const a = age < vc*.6 ? 1 : 1-(age-vc*.6)/(vc*.4);
   const x=(ptr.x-cam.x)*cam.s, y=(ptr.y-cam.y)*cam.s, r=Math.max(9,13*Math.min(cam.s,2));
   ctx.save();
-  const g = ctx.createRadialGradient(x,y,0,x,y,r*2.6);
-  g.addColorStop(0,`rgba(255,77,94,${.55*a})`); g.addColorStop(1,'rgba(255,77,94,0)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*2.6,0,7); ctx.fill();
-  ctx.fillStyle=`rgba(255,77,94,${.95*a})`; ctx.beginPath(); ctx.arc(x,y,r*.42,0,7); ctx.fill();
-  ctx.strokeStyle=`rgba(255,255,255,${.85*a})`; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.arc(x,y,r*.42,0,7); ctx.stroke();
+  if (ui.ptrForma === 'punto'){
+    const g = ctx.createRadialGradient(x,y,0,x,y,r*2.6);
+    g.addColorStop(0,`rgba(${rgb},${.55*a})`); g.addColorStop(1,`rgba(${rgb},0)`);
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*2.6,0,7); ctx.fill();
+    ctx.fillStyle=`rgba(${rgb},${.95*a})`; ctx.beginPath(); ctx.arc(x,y,r*.42,0,7); ctx.fill();
+    ctx.strokeStyle=`rgba(255,255,255,${.85*a})`; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y,r*.42,0,7); ctx.stroke();
+  } else {
+    /* La flecha y la mano van con la punta exacta donde está el dedo, no
+       centradas: si se centraran, señalarían un centímetro más abajo de lo
+       que uno cree, que a tamaño de pizarrón es media línea. */
+    const F = PTR_FORMAS[ui.ptrForma] || PTR_FORMAS.flecha;
+    const k = Math.max(1.3, r*.155);
+    ctx.globalAlpha = a;
+    ctx.translate(x - F.tip[0]*k, y - F.tip[1]*k); ctx.scale(k,k);
+    ctx.shadowColor='rgba(0,0,0,.45)'; ctx.shadowBlur=7/k; ctx.shadowOffsetY=1.5/k;
+    ctx.fillStyle=`rgb(${rgb})`; ctx.fill(ptrCamino(ui.ptrForma));
+    ctx.shadowColor='transparent';
+    ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=1.5/k;
+    ctx.lineJoin='round'; ctx.stroke(ptrCamino(ui.ptrForma));
+  }
   ctx.restore();
 }
 /* Las iniciales de quien está escribiendo, pegadas a la punta. Con varias
@@ -1667,7 +2300,7 @@ function drawBoard(){
      porque ese vive suelto sobre el lienzo y no en las capas. Se vuelve a
      pintar entero y se reinicia la cuenta de lo ya pintado. */
   if (drawing && drawing.pts && drawing.pts.length > 1 && !drawing.hl && !drawing.erase && !drawing.chalk){
-    strokePath(bctx, drawing, cam, undefined, isDark());
+    conRecorte(bctx, cam, ()=> strokePath(bctx, drawing, cam, undefined, isDark()));
     drawing._pintado = drawing.pts.length;
   }
   dibujarQuienEscribe(bctx, cam);
@@ -1698,28 +2331,38 @@ function pointerLoop(){
   if (!ptr.on){ ptrRaf=null; return; }
   drawBoard(); drawProj();
   // se sigue animando mientras quede algo de estela por apagar
-  if (ptrLimpiar(performance.now()) === 0 && performance.now()-ptr.t > 2700){
+  if (ptrLimpiar(performance.now()) === 0 && performance.now()-ptr.t > vidaCabeza()+120){
     ptr.on=false; ptr.trazos.length=0; ptrRaf=null; drawBoard(); drawProj(); return; }
   ptrRaf = requestAnimationFrame(pointerLoop);
 }
 let ptrPush = 0;
+/* Deja la punta donde toca, avisa al otro aparato y arranca la animación. El
+   estilo viaja con la señal: sin él la clase vería un punto rojo mientras el
+   profesor cree estar señalando con una mano verde. */
+function ptrMarcar(x, y, ahora){
+  ptr.x=x; ptr.y=y; ptr.t=ahora; ptr.on=true;
+  if (ROLE === 'control' && net.on && performance.now()-ptrPush > 60){
+    ptrPush = performance.now();
+    post({t:'ptr', x, y, c:ui.ptrColor, f:ui.ptrForma, v:ui.ptrVida}); }
+  if (!ptrRaf) ptrRaf = requestAnimationFrame(pointerLoop);
+}
 function pokePointer(x,y){
   const ahora = performance.now();
+  // señalar con flecha o mano no deja rastro, así que tampoco se guarda
+  if (ui.ptrForma !== 'punto'){
+    if (ptr.trazos.length) ptr.trazos.length = 0;
+    ptrMarcar(x, y, ahora); return;
+  }
   let ult = ptr.trazos[ptr.trazos.length-1];
   const fin = ult && ult.length ? ult[ult.length-1] : null;
   // tras una pausa empieza un trazo nuevo, sin unirlo con una raya al anterior
   if (!ult || (fin && ahora - fin.t > PTR_PAUSA)){ ult = []; ptr.trazos.push(ult); }
   else if (fin && Math.hypot(x-fin.x, y-fin.y) < 1.2/Math.max(camB().s,.01)) {
-    ptr.x=x; ptr.y=y; ptr.t=ahora; ptr.on=true;
-    if (!ptrRaf) ptrRaf = requestAnimationFrame(pointerLoop);
-    return;                                   // no vale la pena otro punto
+    ptrMarcar(x, y, ahora); return;           // no vale la pena otro punto
   }
   ult.push({x, y, t:ahora});
   if (ptrLimpiar(ahora) > PTR_MAX && ptr.trazos[0].length) ptr.trazos[0].shift();
-  ptr.x=x; ptr.y=y; ptr.t=ahora; ptr.on=true;
-  if (ROLE === 'control' && net.on && performance.now()-ptrPush > 60){
-    ptrPush = performance.now(); post({t:'ptr', x, y}); }
-  if (!ptrRaf) ptrRaf = requestAnimationFrame(pointerLoop); }
+  ptrMarcar(x, y, ahora); }
 
 /* Mejora del trazo. La mano tiembla y el Pencil lo registra fielmente; a
    tamaño de pizarrón ese temblor se ve. Se promedia cada punto con sus dos
@@ -1837,7 +2480,8 @@ const toques = () => [...pointers.values()].filter(p => p.pointerType === 'touch
    necesita que se corte el gesto o arrastrarla mueve la página entera. */
 const ZONA_INTERFAZ = 'button, select, input, label, textarea, a, ' +
   '#bar, #dock, #side, #libList, #texEd, #selBar, #pegarBar, #opcTrazo, ' +
-  '#shapeRow, #panelFondo, #bgBar, #pdfEd, #libWrap, #controls, #espera, #lupaBar';
+  '#shapeRow, #panelFondo, #bgBar, #pdfEd, #libWrap, #controls, #espera, ' +
+  '#lupaBar, .menuDesp, #opcPuntero';
 document.addEventListener('touchmove', e => {
   const t = e.target;
   if (t && t.closest && t.closest(ZONA_INTERFAZ)) return;
@@ -1852,7 +2496,7 @@ function notarPluma(){
   penVisto = true;
   if (!ui.pencilOnly){
     ui.pencilOnly = true;
-    document.getElementById('pencilOnly').classList.add('on');
+    marcarPencil();
     toast('Apple Pencil detectado: ya puedes recargar la mano.');
   }
 }
@@ -1876,6 +2520,23 @@ function cancelarEsperaLazo(){
    rectángulo del lienzo en cada uno fuerza un cálculo de disposición, y como
    el dibujado escribe texto en el panel, ese cálculo no está en caché nunca.
    Se toma una vez al apoyar la pluma y se reutiliza durante todo el trazo. */
+/* Un repintado por cuadro durante un arrastre, no uno por evento.
+
+   El Pencil manda hasta 120 al segundo, y cada uno invalidaba la caché entera
+   y volvía a trazar la página en las dos vistas. Es el mismo patrón que el
+   resaltador y la goma ya usaban unas líneas más abajo; el arrastre de
+   selección y el del fondo se habían quedado sin él. */
+let arrastreSucio = false;
+function pintarArrastre(){
+  if (arrastreSucio) return;
+  arrastreSucio = true;
+  requestAnimationFrame(()=>{
+    arrastreSucio = false;
+    olvidarTinta();
+    refreshSelBar();
+    drawBoard(); drawProj();
+  });
+}
 function refrescarRect(){
   const r = board.getBoundingClientRect();
   board._left = r.left; board._top = r.top;
@@ -1928,6 +2589,9 @@ function alBajarPuntero(e){
     document.body.classList.remove('conTrazo');
   if (document.body.classList.contains('conFondoPanel'))
     document.body.classList.remove('conFondoPanel');
+  if (document.body.classList.contains('conPuntero'))
+    document.body.classList.remove('conPuntero');
+  if (menuAbierto()) cerrarMenus();
   sanearPunteros();
   if (e.pointerType === 'pen'){ notarPluma(); penDown = true; pinch = null; }
   (e.currentTarget || board).setPointerCapture(e.pointerId);
@@ -2002,15 +2666,14 @@ function alMoverPuntero(e){
   if (bgDrag){
     const b = pg().bgImg;
     if (b){ b.x = r2(b.x + w.x-bgDrag.x); b.y = r2(b.y + w.y-bgDrag.y); }
-    bgDrag = {x:w.x, y:w.y}; olvidarTinta(); drawBoard(); drawProj(); return;
+    bgDrag = {x:w.x, y:w.y}; pintarArrastre(); return;
   }
   if (dragSel){
     const dx=w.x-dragSel.x, dy=w.y-dragSel.y;
     for (const i of sel){ const it = items()[i]; if (it) moveItem(it, dx, dy); }
     // sin esto los trazos se quedaban clavados en su sitio viejo durante todo
     // el arrastre —la caché los daba por pintados— y solo saltaban al soltar
-    dragSel = {x:w.x, y:w.y}; olvidarTinta();
-    refreshSelBar(); drawBoard(); drawProj(); return;
+    dragSel = {x:w.x, y:w.y}; pintarArrastre(); return;
   }
   if (lassoing){ const last = lassoPts[lassoPts.length-1];
     if (Math.hypot(w.x-last.x, w.y-last.y) > 3/camB().s) lassoPts.push(w);
@@ -2057,7 +2720,7 @@ function alMoverPuntero(e){
       strokePath(lc, drawing, camB(), undefined, isDark());
       bctx.save(); bctx.setTransform(1,0,0,1,0,0);
       bctx.globalAlpha = drawing.hl ? (isDark() ? .55 : .40) : 1;
-      bctx.drawImage(layer('vivo', W, H), 0, 0);
+      conRecorte(bctx, camB(), ()=> bctx.drawImage(layer('vivo', W, H), 0, 0));
       bctx.restore();
     }); }
   } else if (drawing.erase){
@@ -2085,7 +2748,7 @@ function alMoverPuntero(e){
     // solo el tramo nuevo; se solapa un segmento porque la curva de cada
     // punto se apoya en el siguiente
     const desde = Math.max(1, (drawing._pintado||1) - 1);
-    strokePath(bctx, drawing, camB(), undefined, isDark(), desde);
+    conRecorte(bctx, camB(), ()=> strokePath(bctx, drawing, camB(), undefined, isDark(), desde));
     drawing._pintado = drawing.pts.length;
   }
   if (enLupa()) dibujarLupa();
@@ -2111,7 +2774,7 @@ function endPointer(e){
   }
   cancelarEsperaLazo();
   dibujante = null;
-  if (bgDrag){ bgDrag = null; edicion(); olvidarTinta(); touch(); sync(); return; }
+  if (bgDrag){ bgDrag = null; edicion(); touch(); sync(); return; }
   if (dragSel){ dragSel = null; edicion(); touch(); sync(); return; }
   if (lassoing){
     lassoing = false;
@@ -2218,7 +2881,7 @@ function movePinch(){
       moveItem(it, dx, dy);
     }
     pinch.d = d; pinch.ang = angAhora; pinch.cx = cx; pinch.cy = cy;
-    edicion(); olvidarTinta(); refreshSelBar(); drawBoard(); drawProj();
+    edicion(); refreshSelBar(); drawBoard(); drawProj();
     return;
   }
   if (ui.tool === 'fondo' && pg().bgImg){
@@ -2242,7 +2905,7 @@ board.addEventListener('wheel', e=>{
     const r0=board.getBoundingClientRect(), c0=camB();
     escalarFondo(pg(), Math.exp(-e.deltaY/400),
                  c0.x+(e.clientX-r0.left)/c0.s, c0.y+(e.clientY-r0.top)/c0.s);
-    edicion(); olvidarTinta(); touch(); sync(); return;
+    edicion(); touch(); sync(); return;
   }
   const r=board.getBoundingClientRect(), c=camB();
   if (e.ctrlKey||e.metaKey){
@@ -2292,19 +2955,51 @@ function refreshSelBar(){
   bar.style.top = Math.round(Math.max(8, y)) + 'px';
 }
 function clearSel(){ sel = []; refreshSelBar(); drawBoard(); }
+/* Un solo ritual para abrir un cuaderno. Había seis caminos, cada uno con el
+   suyo, y dos consecuencias que se disparaban siempre:
+
+   Importar un archivo no olvidaba el historial, así que un «Deshacer» justo
+   después pegaba el contenido del cuaderno ANTERIOR encima del recién
+   importado, porque las instantáneas guardan la lista de elementos sin más.
+
+   Y ninguno limpiaba las firmas de las miniaturas. Al abrir un cuaderno de
+   tres páginas teniendo abierto otro de tres, la tira solo se reconstruye si
+   cambia el número de páginas, así que las miniaturas 2 y 3 seguían enseñando
+   el cuaderno viejo hasta visitar cada una. */
+function abrirCuaderno(nb, pagina){
+  state.nb = nb;
+  state.pi = Math.max(0, Math.min(pagina || 0, nb.pages.length - 1));
+  sel = [];
+  clip = clip;                       // el portapapeles cruza cuadernos a propósito
+  olvidarHistorial();
+  olvidarTinta();
+  imgCache.clear();
+  miniFirma.clear();
+  const tira = document.getElementById('pageStrip');
+  if (tira) tira.innerHTML = '';
+  refreshSelBar(); refreshLook(); sync(); touch();
+}
 function selApplyColor(){
-  apuntar(); edicion();
-  if (!sel.length) return;
-  for (const i of sel){ const it = items()[i];
-    if (it.k === 't' || !it.hl) it.c = ui.slot; else it.c = ui.hlSlot; }
-  imgCache.clear(); touch(); sync();
+  mutar(()=>{
+    for (const i of sel){
+      const it = items()[i];
+      if (!it) continue;            // la selección guarda índices, no identidades
+      if (it.k === 't' || !it.hl) it.c = ui.slot; else it.c = ui.hlSlot;
+      /* Solo las fórmulas se rasterizan por color, así que solo ellas hay que
+         olvidarlas. Vaciar `imgCache` entera tiraba el PDF decodificado y las
+         imágenes insertadas, y forzaba un repintado completo. El comentario
+         del selector de color de fondo explica por qué se quitó allí; aquí
+         se había quedado. */
+      if (it.k === 't') imgCache.delete('el:'+it.id);
+    }
+  }, {nadaQueHacer: ()=>!sel.length});
 }
 function selScale(k){
-  apuntar(); edicion(); olvidarTinta();
-  const b = selBounds(); if (!b) return;
-  const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
-  for (const i of sel) scaleItem(items()[i], k, cx, cy);
-  touch(); sync();
+  mutar(()=>{
+    const b = selBounds();
+    const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
+    for (const i of sel){ const it = items()[i]; if (it) scaleItem(it, k, cx, cy); }
+  }, {nadaQueHacer: ()=>!sel.length || !selBounds()});
 }
 function reindexAfterDelete(removed){
   const P = pg();
@@ -2355,11 +3050,14 @@ function avisarEscrituraAlFinal(){
 function borrarAnterior(){
   const P = pg();
   if (!ui.editar || P.reveal <= 0) return false;
-  apuntar(); edicion();
-  const at = P.reveal - 1;
-  P.items.splice(at, 1);
-  reindexAfterDelete([at]);
-  touch(); sync();
+  mutar(()=>{
+    const at = P.reveal - 1;
+    P.items.splice(at, 1);
+    reindexAfterDelete([at]);
+    // la selección también va por índice: corregirla o soltarla
+    sel = sel.filter(i => i !== at).map(i => i > at ? i-1 : i);
+    refreshSelBar();
+  });
   return true;
 }
 async function selCopy(quiet){
@@ -2377,26 +3075,31 @@ function avisarPortapapeles(n){
   refreshSelBar();      // «Pegar» aparece en la barra en cuanto hay algo
 }
 async function selCut(){
-  apuntar(); edicion();
   if (!sel.length) return;
-  await selCopy(true);
-  const P = pg(), removed = [...sel].sort((a,b)=>a-b);
-  P.items = P.items.filter((_,i) => !sel.includes(i));
-  reindexAfterDelete(removed);
-  clearSel(); touch(); sync();
+  await selCopy(true);                       // el copiado no toca el documento
+  mutar(()=>{
+    const P = pg(), fuera = new Set(sel), removed = [...sel].sort((a,b)=>a-b);
+    P.items = P.items.filter((_,i) => !fuera.has(i));
+    reindexAfterDelete(removed);
+    clearSel();
+  });
   avisarPortapapeles(clip ? clip.length : 0);
   toast('Cortado. Toca «Pegar aquí» cuando quieras.');
 }
 function selDelete(){
-  apuntar(); edicion();
-  if (!sel.length) return;
-  const P = pg(), removed = [...sel].sort((a,b)=>a-b);
-  P.items = P.items.filter((_,i) => !sel.includes(i));
-  reindexAfterDelete(removed);
-  clearSel(); touch(); sync();
+  mutar(()=>{
+    /* `includes` dentro de `filter` es cuadrático, y `drawRibbon` ya resolvió
+       esto con un conjunto veinte líneas más arriba. */
+    const P = pg(), fuera = new Set(sel), removed = [...sel].sort((a,b)=>a-b);
+    P.items = P.items.filter((_,i) => !fuera.has(i));
+    reindexAfterDelete(removed);
+    clearSel();
+  }, {nadaQueHacer: ()=>!sel.length});
 }
 async function paste(){
-  apuntar(); edicion();
+  /* Recoger el portapapeles va antes de apuntar: pegar con el portapapeles
+     vacío no debe empujar un paso al historial, que con la pila en cuarenta
+     saca de ella pasos buenos. */
   if (!clip) clip = await store.get('clipboard');
   if (!clip || !clip.length){ toast('No hay nada en el portapapeles.'); return; }
   const copy = JSON.parse(JSON.stringify(clip));
@@ -2409,20 +3112,22 @@ async function paste(){
   const tx = c.x + board._cssW/(2*c.s) - (b.x0+b.x1)/2;
   const ty = c.y + board._cssH/(2*c.s) - (b.y0+b.y1)/2;
   copy.forEach(it => moveItem(it, tx, ty));
-  const P = pg();
-  let start;
-  if (ui.editar){
-    start = P.reveal;
-    P.items.splice(start, 0, ...copy);
-    reindexAfterInsert(start, copy.length);
-    P.reveal = start + copy.length;
-  } else {
-    start = P.items.length;
-    P.items.push(...copy);
-    P.reveal = P.items.length;
-  }
-  sel = copy.map((_,i)=> start+i);
-  refreshSelBar(); touch(); sync();
+  mutar(()=>{
+    const P = pg();
+    let start;
+    if (ui.editar){
+      start = P.reveal;
+      P.items.splice(start, 0, ...copy);
+      reindexAfterInsert(start, copy.length);
+      P.reveal = start + copy.length;
+    } else {
+      start = P.items.length;
+      P.items.push(...copy);
+      P.reveal = P.items.length;
+    }
+    sel = copy.map((_,i)=> start+i);
+    refreshSelBar();
+  });
   toast('Pegado en la página ' + (state.pi+1) + '. Arrástralo para colocarlo.');
 }
 
@@ -2563,13 +3268,45 @@ function dibujarLupa(){
   const cam = { x: lupa.x, y: lupa.y, s };
   renderTo(lctx, cam, lupaC._cssW, lupaC._cssH, P.items.length, 0, 'lupa', true,
            DPR(), null, P.reveal + (playPartial ? 1 : 0));
-  /* Renglón guía: sin una línea de apoyo la letra se va cuesta abajo, que es
-     justo lo que el aumento delata. */
-  const yb = (lupa.y + lupa.alto*0.78 - lupa.y) * s;
+  const W = lupaC._cssW, H = lupaC._cssH;
   lctx.save();
-  lctx.strokeStyle = isDark() ? 'rgba(255,255,255,.16)' : 'rgba(0,0,0,.14)';
+  const oscuro = isDark();
+
+  /* Renglón guía y su renglón de altura. Sin una línea de apoyo la letra se va
+     cuesta abajo, que es justo lo que el aumento delata. Estaba al 14 % de
+     opacidad, o sea invisible: en una captura al doble de resolución no se
+     distinguía del papel. */
+  const yb = lupa.alto * 0.78 * s;            // la línea sobre la que se escribe
+  const yt = lupa.alto * 0.30 * s;            // la altura de una mayúscula
+  lctx.strokeStyle = oscuro ? 'rgba(120,190,255,.30)' : 'rgba(40,110,200,.26)';
+  lctx.lineWidth = 1.5;
+  lctx.beginPath(); lctx.moveTo(0, yb); lctx.lineTo(W, yb); lctx.stroke();
+  lctx.strokeStyle = oscuro ? 'rgba(120,190,255,.13)' : 'rgba(40,110,200,.11)';
   lctx.lineWidth = 1;
-  lctx.beginPath(); lctx.moveTo(0, yb); lctx.lineTo(lupaC._cssW, yb); lctx.stroke();
+  lctx.setLineDash([5,5]);
+  lctx.beginPath(); lctx.moveTo(0, yt); lctx.lineTo(W, yt); lctx.stroke();
+  lctx.setLineDash([]);
+
+  /* Aviso de que la ventana va a saltar. Al pasar del 72 % del ancho, la lupa
+     se corre sola: sin esta banda el salto llega de sorpresa a media palabra y
+     no se sabe de dónde vino. Ahora se ve venir. */
+  const xSalto = W * 0.72;
+  const g = lctx.createLinearGradient(xSalto, 0, W, 0);
+  g.addColorStop(0, 'rgba(255,176,32,0)');
+  g.addColorStop(1, 'rgba(255,176,32,.20)');
+  lctx.fillStyle = g; lctx.fillRect(xSalto, 0, W - xSalto, H);
+  lctx.strokeStyle = 'rgba(255,176,32,.35)'; lctx.lineWidth = 1;
+  lctx.beginPath(); lctx.moveTo(xSalto, 0); lctx.lineTo(xSalto, H); lctx.stroke();
+
+  /* Y el final de la hoja, si cae dentro de la ventana: la lupa no puede
+     avanzar más allá y conviene saberlo antes de llegar. */
+  const xHoja = (MARCO.w - lupa.x) * s;
+  if (xHoja > 0 && xHoja < W){
+    lctx.fillStyle = 'rgba(14,16,19,.55)';
+    lctx.fillRect(xHoja, 0, W - xHoja, H);
+    lctx.strokeStyle = 'rgba(255,255,255,.35)'; lctx.lineWidth = 2;
+    lctx.beginPath(); lctx.moveTo(xHoja, 0); lctx.lineTo(xHoja, H); lctx.stroke();
+  }
   lctx.restore();
   // el trazo en curso vive suelto sobre el lienzo, no en las capas
   if (drawing && drawing.pts && drawing.pts.length > 1 && !drawing.hl && !drawing.erase && !drawing.chalk)
@@ -2598,6 +3335,7 @@ function ponerLupa(v){
     lupaLimitar();
   }
   // el lienzo cambia de alto al aparecer o irse la banda
+  medirCromo();
   setTimeout(()=>{ fitAll(); refrescarRect(); dibujarLupa(); }, 20);
 }
 function ultimoEscrito(){
@@ -2632,8 +3370,10 @@ function drawRibbon(){
   const caja = (a,t,la,lt) => pie ? [t,a,lt,la] : [a,t,la,lt];
   const N = Math.max(P.items.length,1), bw = L/N;
   rctx.fillStyle = '#0E1013'; rctx.fillRect(0,0,W,H);
+  const enSel = new Set(sel);        // era O(items x sel) dentro del bucle
   for (let i=0;i<P.items.length;i++){
     const it = P.items[i];
+    if (!it) continue;               // un hueco aquí callaba la proyección entera
     rctx.globalAlpha = i < P.reveal ? 1 : .28;
     if (it.k === 't' || it.k === 'i'){
       rctx.fillStyle = it.k === 'i' ? '#C8A88F' : '#8FA8C8';
@@ -2643,7 +3383,7 @@ function drawRibbon(){
       rctx.fillStyle = it.erase ? '#4A5058' : (it.hl ? HLP[it.c] : PIGMENT.dark[it.c]);
       rctx.fillRect(...caja(i*bw+bw*.12, (T-h)/2, Math.max(1.2,bw*.76), h));
     }
-    if (sel.includes(i)){
+    if (enSel.has(i)){
       rctx.globalAlpha = 1; rctx.strokeStyle = '#4FB286'; rctx.lineWidth = 1;
       rctx.strokeRect(...caja(i*bw+bw*.06, 2.5, Math.max(2,bw*.88), T-5));
     }
@@ -2842,7 +3582,14 @@ const nextStop = () => irAStop(siguienteCorte());
 const prevStop = () => { const P=pg(), p=P.stops.filter(s=>s<P.reveal);
   irAStop(p.length ? p[p.length-1] : 0); };
 const escribirHastaStop = () => playTo(siguienteCorte());
-function sync(){ drawBoard(); drawProj(); drawRibbon(); dibujarLupa(); refreshPages(); pushSoon(); }
+/* Empujar primero. Si un dibujo lanza, el profesor lo ve en su pantalla, pero
+   la clase se queda congelada sin ninguna señal de que algo va mal: es la peor
+   forma de fallar. El empujón no depende de que el dibujado salga bien. */
+function sync(){
+  pushSoon();
+  try{ drawBoard(); drawProj(); drawRibbon(); dibujarLupa(); refreshPages(); }
+  catch(err){ console.error('fallo al dibujar', err); }
+}
 
 /* ===================== páginas ===================== */
 function goPage(i){
@@ -2860,12 +3607,18 @@ function addPage(dup){
     p.items.forEach(it=>{ if(it.k==='t') it.id = uid(); });
     p.stops = [...cur.stops]; p.reveal = cur.reveal; }
   state.nb.pages.splice(state.pi+1, 0, p);
+  /* El historial guarda el índice de la página, no su identidad. Añadir o
+     quitar páginas corre los índices, así que una instantánea vieja aterriza
+     sobre la página equivocada y se lleva su contenido por delante. Es la
+     misma razón por la que `moverPagina` lo olvida. */
+  olvidarHistorial();
   touch(); goPage(state.pi+1);
 }
 function delPage(){
   if (state.nb.pages.length === 1){ toast('El cuaderno necesita al menos una página.'); return; }
   if (pg().items.length && !confirm(`Se borra la página ${state.pi+1} con sus ${pg().items.length} elementos. ¿Seguir?`)) return;
   state.nb.pages.splice(state.pi,1);
+  olvidarHistorial();      // ver addPage: el historial va por índice de página
   touch(); goPage(Math.min(state.pi, state.nb.pages.length-1));
 }
 /* Miniaturas de página. Con un PDF de dieciocho páginas detrás, unos números
@@ -2985,6 +3738,33 @@ function paginasPedidas(txt, total){
   return [...fuera].sort((x,y)=>x-y);
 }
 
+/* Fuerza la decodificación de cuanto vaya a pintarse y espera a que termine.
+   `img.decode()` es lo que garantiza que el siguiente `drawImage` tenga píxeles;
+   con `onload` a secas el navegador todavía puede estar descomprimiendo. */
+async function preparaImagenes(indices){
+  const esperas = [];
+  const pedir = (clave, src) => {
+    if (!src) return;
+    const ya = imgCache.get(clave);
+    if (ya && ya.ok) return;
+    const img = new Image();
+    esperas.push(img.decode ? img.decode().catch(()=>{})
+                            : new Promise(r=>{ img.onload=r; img.onerror=r; }));
+    img.src = src;
+    // que quede en la caché que usa el dibujado, con la misma clave
+    imgCache.set(clave, {img, ok:true});
+  };
+  for (const i of indices){
+    const P = state.nb.pages[i]; if (!P) continue;
+    if (P.bgImg) pedir('bg:'+P.bgImg.id, P.bgImg.src);
+    for (const it of P.items){
+      if (!it) continue;
+      if (it.k === 'i') pedir('el:'+it.id, it.src);
+    }
+  }
+  if (esperas.length) await Promise.all(esperas);
+  olvidarTinta();          // que el raster se rehaga ya con las imágenes puestas
+}
 async function exportPDF(opciones){
   if (!(await ensureLib('jspdf'))){
     toast('jsPDF no está en caché y no hay conexión. Conéctate una vez y queda guardado.');
@@ -2998,6 +3778,13 @@ async function exportPDF(opciones){
   const W = 1600, H = Math.round(W*proj.height/proj.width), pw = W*.45, ph = H*.45;
   const tmp = document.createElement('canvas'); tmp.width=W; tmp.height=H;
   const tctx = tmp.getContext('2d');
+  /* Esperar a que decodifiquen todas las imágenes de las páginas pedidas.
+     El bucle de abajo es síncrono y `loadImg` devuelve null mientras carga, así
+     que sin esto el PDF salía con los trazos flotando sobre blanco. Con fondos
+     traídos del servidor no es una carrera que a veces se pierda: se pierde
+     siempre, porque son peticiones de red que no han empezado. */
+  await preparaImagenes(quiero);
+
   let pdf = null, hojas = 0;
   quiero.forEach(i=>{
     const P = state.nb.pages[i];
@@ -3014,10 +3801,29 @@ async function exportPDF(opciones){
       if (!pdf) pdf = new jsPDF({orientation:'landscape', unit:'pt', format:[pw,ph]});
       else pdf.addPage([pw,ph],'landscape');
       pdf.addImage(tmp.toDataURL('image/png'),'PNG',0,0,pw,ph);
+      /* Pie de identificación en cada hoja. El PDF es lo que circula: se
+         reparte al grupo, se sube a Classroom y acaba en carpetas ajenas. Sin
+         esto no dice de quién es ni cómo citarlo. Va en gris claro y a 5 pt,
+         fuera del área de la imagen, así que no estorba a la clase. */
+      pdf.setFontSize(5);
+      pdf.setTextColor(150);
+      pdf.text(marcaCorta(), 10, ph - 9);
+      pdf.text(`DOI ${APP.doi} · ${APP.correo}`, 10, ph - 3.5);
       hojas++;
     });
   });
   if (!pdf){ toast('Todavía no hay nada que exportar.'); return; }
+  /* Y en las propiedades del archivo, que es donde miran los gestores de
+     referencias y el Finder. */
+  try{
+    pdf.setProperties({
+      title:   (state.nb.name || 'Clase') + ' — ' + APP.nombre,
+      author:  APP.autor,
+      subject: 'Clase preparada con ' + APP.nombre + ' ' + APP.version,
+      keywords: `${APP.nombre}, pizarrón digital, docencia matemática, DOI ${APP.doi}`,
+      creator: `${APP.nombre} ${APP.version} — ${APP.autor} — https://doi.org/${APP.doi}`,
+    });
+  }catch{ /* jsPDF viejo sin setProperties: el pie de cada hoja ya identifica */ }
   pdf.save((state.nb.name||'pizarron').replace(/[^\w\- ]/g,'') + '.pdf');
   toast(`${hojas} hoja${hojas===1?'':'s'} de ${quiero.length} página${quiero.length===1?'':'s'}.`);
 }
@@ -3124,8 +3930,8 @@ async function openLib(){
       }
       if (!nb){ toast('Ese cuaderno ya no está disponible.'); return; }
       await persist();
-      state.nb = migrate(nb); state.pi = 0; sel = []; refreshSelBar();
-      libWrap.classList.remove('open'); refreshLook(); olvidarTinta(); olvidarHistorial(); sync();
+      abrirCuaderno(migrate(nb));
+      libWrap.classList.remove('open');
       toast('Abriste ' + state.nb.name);
     };
     d.append(nm, meta, del); list.appendChild(d);
@@ -3165,18 +3971,28 @@ function migrate(d){
   const nb = newNotebook('Cuaderno importado'); nb.pages = [p];
   return nb;
 }
+/* Exportar y guardar escriben lo mismo: el cuaderno entero, con los fondos
+   dentro. Un archivo que se va a Dropbox o a Archivos tiene que bastarse solo,
+   porque ahí no hay servidor del que traer nada. Lo que sí se comparte con el
+   guardado en servidor es el nombre: sin el identificador, dos exportaciones
+   seguidas se pisaban en la carpeta de Descargas. */
 function exportFile(){
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify({v:4, ...state.nb})],{type:'application/json'}));
-  a.download = (state.nb.name||'cuaderno').replace(/[^\w\- ]/g,'')+'.json'; a.click();
+  a.href = URL.createObjectURL(new Blob([nbJSON()],{type:'application/json'}));
+  a.download = nbFileName(); a.click();
 }
 document.getElementById('fileIn').addEventListener('change', e=>{
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = () => {
+  r.onload = async () => {
     try{
-      state.nb = migrate(JSON.parse(r.result)); state.nb.id = uid();
-      state.pi = 0; sel = []; refreshSelBar(); refreshLook(); sync(); touch();
+      const d = JSON.parse(r.result);
+      /* Un cuaderno guardado por el servidor lleva los fondos por referencia,
+         no dentro. Sin traerlos, la importación salía con los trazos flotando
+         sobre blanco y sin decir nada. La biblioteca ya lo hacía; este camino
+         se había quedado sin ello. */
+      const nb = migrate(await traerFondos(d)); nb.id = uid();
+      abrirCuaderno(nb);
       libWrap.classList.remove('open'); toast('Importado: ' + state.nb.name);
     }catch(err){ toast('No se pudo leer el archivo: ' + err.message); }
   };
@@ -3381,7 +4197,10 @@ const net = {
   gente:new Map(),   // id -> {nombre, iniciales, rol, visto}
   nombre:'', iniciales:'',
   enviados:0,      // cuántos elementos conoce ya el otro lado
-  sucio:false      // hubo una edición: hay que mandar la página entera
+  sucio:false,     // hubo una edición: hay que mandar la página entera
+  visto:0,         // cuándo llegó el último mensaje, latido incluido
+  fallos:0,        // empujones seguidos que no salieron
+  escribiendo:null, escTimer:null   // quién está trazando ahora mismo
 };
 
 function stripAssets(P){
@@ -3392,7 +4211,7 @@ function stripAssets(P){
     if (!net.sent.has(o.id)) faltan.push({id:o.id, src:o.src});
     o.ref = o.id; o.src = '';
   };
-  copia.items.forEach(it => { if (it.k === 'i') quitar(it); });
+  copia.items.forEach(it => { if (it && it.k === 'i') quitar(it); });
   if (copia.bgImg) quitar(copia.bgImg);
   return {copia, faltan};
 }
@@ -3402,7 +4221,16 @@ async function post(msg){
   try{
     await pedir('/empujar', {method:'POST', headers:{'Content-Type':'application/json'},
                              body: JSON.stringify(msg)});
-  }catch{ /* enlace caído: se recupera con el siguiente empujón */ }
+    if (net.fallos){ net.fallos = 0; marcarEnlace(true); }
+  }catch{
+    /* Que no salga es tan grave como no recibir, y hasta ahora no lo decía
+       nadie. El canal de eventos puede seguir vivo mientras los envíos ya no
+       llegan, y entonces el profesor escribe con el indicador en verde para
+       una clase que no está viendo nada. Tres seguidos y se avisa. No se toca
+       `net.on`: hay que seguir intentándolo, porque el siguiente empujón es lo
+       que recupera la conexión. */
+    if (++net.fallos >= 3) marcarEnlace(false);
+  }
 }
 function pushPage(){
   if (!net.on || ROLE !== 'control') return;
@@ -3416,6 +4244,41 @@ function pushPage(){
    cambiar un color, pegar— obliga a mandar la página entera, porque el
    receptor no puede deducirla de un añadido. */
 function edicion(){ net.sucio = true; olvidarTinta(); }
+
+/* ===================== toda mutación pasa por aquí =====================
+
+   Cada cambio del documento tiene que llamar a mano, y en el orden correcto,
+   hasta cuatro funciones de contabilidad: `apuntar()` para el historial,
+   `edicion()` para reenviar por red, `olvidarTinta()` para invalidar la caché
+   y `touch()` para guardar. Estaban repartidas por unos cincuenta sitios y el
+   cuarteto literal copiado nueve veces.
+
+   Olvidar una no da error. Da una clase congelada, o un deshacer que borra
+   otra página. Es la causa raíz compartida por cuatro de los defectos de la
+   auditoría de septiembre, y el propio CONTEXTO lo tenía declarado por escrito
+   como riesgo asumido.
+
+   Tres cosas que hace y hay que entender:
+
+   1. El historial va ANTES de tocar nada, o guardaría el estado ya cambiado.
+   2. La comprobación de «no hay nada que hacer» va antes de apuntar. Hoy seis
+      funciones apuntan primero y comprueban después, así que unos toques en
+      vacío empujan fuera de la pila pasos de deshacer buenos.
+   3. `edicion()` ya llama a `olvidarTinta()`. Llamarlo aparte solo sube el
+      contador dos veces, que es lo que pasa hoy en doce sitios.
+
+   `alFinal:true` es para escribir un trazo nuevo al final, que es el único
+   caso en que no hace falta reenviar la página entera. */
+function mutar(cambio, opc){
+  const o = opc || {};
+  if (o.nadaQueHacer && o.nadaQueHacer()) return;
+  if (o.historial !== false) apuntar(o.todasLasPaginas);
+  const r = cambio();
+  if (!o.alFinal) edicion();
+  if (o.guardar !== false) touch();
+  if (o.dibujar !== false) sync();
+  return r;
+}
 
 function pushLite(){
   if (!net.on || ROLE !== 'control') return;
@@ -3431,7 +4294,7 @@ function pushLite(){
      mandaba los cincuenta, y a media clase el iPad se atoraba. */
   if (P.items.length > net.enviados){
     const nuevos = P.items.slice(net.enviados);
-    if (nuevos.some(it => it.k === 'i')){ pushPage(); return; }   // trae imagen
+    if (nuevos.some(it => it && it.k === 'i')){ pushPage(); return; }   // trae imagen
     post({t:'add', desde:net.enviados, items:nuevos,
           reveal:P.reveal, stops:P.stops, guideMine:ui.guideMine});
     net.enviados = P.items.length;
@@ -3515,7 +4378,11 @@ function applyMsg(m){
     if (!m.eco) post({t:'soy', nombre:net.nombre, iniciales:net.iniciales, rol:ROLE, eco:true});
     return;
   }
-  if (m.t === 'ptr'){ pokePointer(m.x, m.y); return; }
+  if (m.t === 'ptr'){
+    if (m.c != null) ui.ptrColor = m.c;
+    if (m.f) ui.ptrForma = m.f;
+    if (m.v) ui.ptrVida = m.v;
+    pokePointer(m.x, m.y); return; }
   if (m.t === 'pide'){ if (ROLE === 'control'){ net.sent.clear(); net.lastSig=''; net.sucio=true; pushPage(); } return; }
 }
 
@@ -3551,11 +4418,17 @@ async function mostrarEmparejamiento(){
 async function mostrarEnlaceAlumnos(){
   const el = document.getElementById('urlAlumnos');
   if (!el || ROLE !== 'control' || !SERVED) return;
-  let host = location.hostname, k = CLAVE;
+  /* El enlace del grupo lleva la clave de LECTURA, no la de control.
+     Hasta la versión 1 llevaba la misma, y como el rol vivía solo en el
+     navegador, cualquier alumno con las herramientas de desarrollo abiertas
+     podía mandar una página en blanco a `/empujar` y borrar la clase. Se
+     comprobó. Ahora el servidor exige la de control para escribir, y esta
+     solo deja mirar. */
+  let host = location.hostname, k = '';
   try{
     const info = await (await pedir('/info')).json();
     if (/^(localhost|127\.)/.test(host)) host = info.anfitrion;
-    if (info.clave) k = info.clave;
+    k = info.claveLectura || '';
   }catch{}
   const u = 'http://' + host + ':' + location.port + '/?rol=alumno'
           + (k ? '&k=' + encodeURIComponent(k) : '');
@@ -3587,15 +4460,22 @@ function cerrarQR(){ document.body.classList.remove('qr'); }
 
 function conectar(){
   if (!SERVED || net.es) return;
-  net.es = new EventSource(conClave('/eventos'));
-  net.es.onopen = () => { net.on = true; marcarEnlace(true);
+  net.es = new EventSource(conClave('/eventos?rol=' + encodeURIComponent(ROLE)));
+  net.es.onopen = () => { net.on = true; net.visto = Date.now(); net.fallos = 0; marcarEnlace(true);
     setTimeout(()=>post({t:'soy', nombre:net.nombre, iniciales:net.iniciales, rol:ROLE}), 300);
     if (ROLE === 'proyeccion') post({t:'pide'});
     else { net.sent.clear(); net.lastSig = ''; net.enviados = 0; pushPage(); } };
   net.es.onerror = () => { net.on = false; marcarEnlace(false); };
   net.es.onmessage = ev => {
     let m; try{ m = JSON.parse(ev.data); }catch{ return; }
+    /* Cualquier mensaje, latido incluido, cuenta como señal de vida. Es lo
+       único que distingue «no ha pasado nada» de «se cayó la red», porque al
+       caerse la conexión no da error: se queda colgada. */
+    net.visto = Date.now();
+    if (!net.on){ net.on = true; marcarEnlace(true); }
+    if (m.t === 'latido') return;
     if (m.t === 'hola'){ net.on = true; marcarEnlace(true); return; }
+    if (m.t === 'quienes'){ anotarQuienes(m.roles || []); return; }
     if (m.de === net.id) return;
     applyMsg(m);
   };
@@ -3636,7 +4516,65 @@ function pintarGente(){
     d.append(ini, nm, rl); cont.appendChild(d);
   }
 }
+/* Qué papeles siguen conectados, según el servidor, que es el único que lo
+   sabe con certeza. Sirve para un caso que en clase no daba ningún síntoma: si
+   la que pierde la red es la proyección y no el iPad, el profesor sigue
+   escribiendo con su enlace en verde mientras el grupo mira una pantalla
+   congelada. El aviso de enlace caído no lo cubre, porque solo reacciona al
+   error del canal propio, y en la proyección está oculto a propósito. */
+let huboProyeccion = false;
+/* El servidor manda un latido cada 15 s. Cuarenta sin nada quiere decir que
+   el canal está muerto aunque el navegador no lo haya notado. */
+const SILENCIO = 40000;
+function vigilarSilencio(){
+  if (!SERVED) return;
+  if (net.visto && Date.now() - net.visto > SILENCIO && net.on){
+    /* Un canal callado no se marca y ya: se reemplaza. Marcarlo sin reabrirlo
+       deja de enviar, y como la conexión colgada nunca da error, el navegador
+       tampoco la reintenta: al volver la red no se reenviaba nada y la clase
+       se quedaba a medias. Al abrir uno nuevo, `onopen` limpia lo enviado y
+       manda la página entera, que es el camino de recuperación que ya
+       existía. */
+    net.on = false; marcarEnlace(false);
+    try{ net.es.close(); }catch{}
+    net.es = null;
+    conectar();
+    return;
+  }
+  /* Y quién sigue ahí. Saludar cada tanto arregla de paso que la gente
+     desapareciera del panel a los 45 s: nadie volvía a saludar nunca. */
+  if (ROLE !== 'alumno' && net.on)
+    post({t:'soy', nombre:net.nombre, iniciales:net.iniciales, rol:ROLE, eco:true});
+  if (ROLE === 'control'){
+    const ahora = Date.now();
+    let hay = false;
+    for (const g of net.gente.values())
+      if (g.rol === 'proyeccion' && ahora - g.visto < 45000) hay = true;
+    if (hay) huboProyeccion = true;
+    marcarProyeccion(!huboProyeccion || hay);
+  }
+}
+function anotarQuienes(roles){
+  if (ROLE !== 'control') return;
+  const hay = roles.includes('proyeccion');
+  if (hay) huboProyeccion = true;
+  // solo se avisa de una ausencia si antes estuvo: al empezar la clase todavía
+  // no se ha abierto la proyección y ese aviso sería ruido
+  marcarProyeccion(!huboProyeccion || hay);
+}
+function marcarProyeccion(bien){
+  document.body.classList.toggle('sinProyeccion', !bien);
+  const a = document.getElementById('avisoProy');
+  if (a) a.classList.toggle('visible', !bien);
+}
+let _enlaceAntes = null;
 function marcarEnlace(v){
+  /* Queda apuntado en la bitácora, no solo en pantalla. Es el fallo más
+     común dando clase y el que peor se recuerda después: cuando el profesor
+     escribe el informe ya no sabe cuántas veces se cayó ni cuándo. */
+  if (SERVED && _enlaceAntes !== null && _enlaceAntes !== v)
+    apuntarFallo('aviso', v ? 'el enlace volvió' : 'se cayó el enlace', '');
+  _enlaceAntes = v;
   /* En clase, el panel lateral está escondido: si el iPad se desengancha y lo
      único que lo dice es una palabra en letra pequeña, se sigue escribiendo
      para nadie. */
@@ -3738,6 +4676,11 @@ function peekBar(){
    iba dejando la barra flotando fija sobre la franja de arriba del lienzo,
    que se dibujaba pero ya no se podía tocar. */
 function hidePeek(){
+  /* Con un menú abierto la barra no se va: el panel vive fuera de ella y se
+     quedaba flotando sin su botón, sin manera de saber de dónde había salido. */
+  if (typeof menuAbierto === 'function' && menuAbierto()){
+    clearTimeout(peekTimer); peekTimer = setTimeout(hidePeek, 6000); return;
+  }
   const bar = document.getElementById('bar');
   bar.style.display = ''; bar.style.position = ''; bar.style.zIndex = '';
   bar.style.left = ''; bar.style.right = ''; bar.style.top = '';
@@ -3814,13 +4757,18 @@ function setTool(t, opts){
   const conOpciones = ['pen','hl','erase'].includes(t);
   document.body.classList.toggle('conFormas', t==='shape');
   document.body.classList.toggle('conTrazo', conOpciones && antes !== null);
+  document.body.classList.toggle('conPuntero', t==='point' && antes !== null);
   /* Los paneles flotantes comparten sitio y altura, así que abrir uno tiene
      que cerrar el de fondo: si no, las opciones de trazo caían encima de las
      miniaturas de papel y no se podía elegir pizarrón. */
   document.body.classList.remove('conFondoPanel');
+  cerrarMenus();
   if (t==='shape') setTimeout(()=>anclarPanel('shapeRow','shapeBtn'), 0);
   if (conOpciones && antes !== null)
     setTimeout(()=>anclarPanel('opcTrazo', {pen:'penBtn',hl:'hlBtn',erase:'eraseBtn'}[t]), 0);
+  if (t==='point' && antes !== null)
+    setTimeout(()=>anclarPanel('opcPuntero',
+      document.getElementById('pointBtn').offsetParent ? 'pointBtn' : 'dPoint'), 0);
   if (t !== 'lasso' && sel.length) clearSel();
   board.style.cursor = t==='point' ? 'crosshair' : (t==='lasso' ? 'cell' : 'default');
   paintSwatches();
@@ -3849,18 +4797,31 @@ function refreshLook(){
   document.getElementById('gsize').value = P.gsize;
   document.getElementById('guideMine').checked = ui.guideMine;
   document.getElementById('nbName').value = state.nb.name;
+  document.getElementById('stCuaderno').textContent = state.nb.name;
   document.getElementById('gsizeLbl').textContent = P.gsize;
   document.getElementById('bgColor').value = P.bgColor || PAPERS[P.paper].bg;
   paintSwatches();
 }
 function ponerPapel(k){
   const P = pg();
-  if (P.paper === k && !P.bgColor) return;
-  apuntar();
-  P.paper = k; P.bgColor = null;
-  paperSel.value = k;
-  document.getElementById('bgColor').value = PAPERS[k].bg;
-  paintSwatches(); marcarPapelElegido(); edicion(); olvidarTinta(); touch(); sync();
+  mutar(()=>{
+    P.paper = k; P.bgColor = null;
+    paperSel.value = k;
+    document.getElementById('bgColor').value = PAPERS[k].bg;
+    paintSwatches(); marcarPapelElegido();
+  }, {nadaQueHacer: ()=> P.paper === k && !P.bgColor});
+}
+/* La guía se cambiaba desde dos sitios con dos comportamientos: la miniatura
+   apuntaba al historial y marcaba la página para reenviarla, la lista
+   desplegable no hacía ninguna de las dos. Cambiarla desde el menú no era
+   deshacible y dejaba el resaltado de la miniatura desincronizado. */
+function ponerGuia(k){
+  const P = pg();
+  mutar(()=>{
+    P.guide = k;
+    guideSel.value = k;
+    marcarPapelElegido();
+  }, {nadaQueHacer: ()=> P.guide === k});
 }
 function marcarPapelElegido(){
   const P = pg();
@@ -3886,20 +4847,26 @@ function construirPanelFondo(){
   for (const [k,n] of Object.entries(GUIDES)){
     const b = document.createElement('button');
     b.className = 'guiaChip'; b.dataset.k = k; b.textContent = n;
-    b.onclick = ()=>{ apuntar(); pg().guide = k; guideSel.value = k;
-                      marcarPapelElegido(); edicion(); olvidarTinta(); touch(); sync(); };
+    b.onclick = ()=> ponerGuia(k);
     gg.appendChild(b);
   }
   marcarPapelElegido();
 }
 paperSel.onchange = e => { ponerPapel(e.target.value); };
-guideSel.onchange = e => { pg().guide=e.target.value; touch(); sync(); };
+guideSel.onchange = e => ponerGuia(e.target.value);
 document.getElementById('gsize').oninput = e => { pg().gsize = +e.target.value;
   document.getElementById('gsizeLbl').textContent = pg().gsize; touch(); sync(); };
+/* `imgCache.clear()` tiraba el fondo de PDF decodificado, las imágenes
+   insertadas y los SVG de las fórmulas, y cada recarga disparaba un repintado
+   completo: veinte arrastres del selector eran veinte repintados de 45 ms. No
+   hacía falta, porque la clave de las fórmulas ya lleva el color dentro y los
+   fondos no dependen de él. */
 document.getElementById('bgColor').oninput = e => { pg().bgColor = e.target.value;
-  imgCache.clear(); paintSwatches(); touch(); sync(); };
+  olvidarTinta(); paintSwatches(); touch(); sync(); };
 document.getElementById('guideMine').onchange = e => { ui.guideMine=e.target.checked; drawProj(); };
-document.getElementById('nbName').oninput = e => { state.nb.name = e.target.value||'Cuaderno sin título'; touch(); };
+document.getElementById('nbName').oninput = e => {
+  state.nb.name = e.target.value||'Cuaderno sin título';
+  document.getElementById('stCuaderno').textContent = state.nb.name; touch(); };
 
 const on = (id,fn) => document.getElementById(id).addEventListener('click', fn);
 on('penBtn',()=>setTool('pen'));  on('hlBtn',()=>setTool('hl'));
@@ -3910,20 +4877,310 @@ on('dPen',()=>setTool('pen')); on('dHl',()=>setTool('hl'));
 // la goma del dock se quedó sin conectar: en modo clase no había con qué borrar
 on('dErase',()=>setTool('erase'));
 // el mismo poner/quitar stop de la cinta, alcanzable en modo clase
-on('dStop', ()=>{ const P=pg(); apuntar();
-  if (P.stops.includes(P.reveal)) P.stops = P.stops.filter(k=>k!==P.reveal);
-  else { P.stops.push(P.reveal); P.stops.sort((a,b)=>a-b); }
-  touch(); sync();
-  toast(P.stops.includes(P.reveal) ? 'Stop puesto aquí.' : 'Stop quitado.'); });
+on('dStop', ()=>{ const puesto = alternarStop();
+  toast(puesto ? 'Stop puesto aquí.' : 'Stop quitado.'); });
 on('dShape',()=>setTool('shape')); on('dPoint',()=>setTool(ui.tool==='point'?'pen':'point'));
 on('shLine',()=>setShape('line')); on('shRect',()=>setShape('rect')); on('shEll',()=>setShape('ellipse'));
 on('shArrow', ()=>setShape('arrow'));
-on('pencilOnly', e=>{ ui.pencilOnly=!ui.pencilOnly;
-  // currentTarget y no target: con los rotulos puestos, tocar la palabra
-  // marcaba el span y el boton se quedaba sin senal de encendido
-  e.currentTarget.classList.toggle('on', ui.pencilOnly);
+function marcarPencil(){
+  for (const id of ['pencilOnly','dPencil'])
+    document.getElementById(id).classList.toggle('on', ui.pencilOnly);
+}
+function alternarPencil(){
+  ui.pencilOnly = !ui.pencilOnly;
+  marcarPencil();
   toast(ui.pencilOnly ? 'Solo el Pencil dibuja: puedes recargar la mano.'
-                      : 'El dedo también dibuja.'); });
+                      : 'El dedo también dibuja.');
+}
+on('pencilOnly', alternarPencil); on('dPencil', alternarPencil);
+
+/* ===================== los menús del documento =====================
+   Cinco nombres en la fila de herramientas, y detrás los 35 controles que
+   antes ocupaban una segunda fila de 2314 px de la que en un iPad se veía
+   menos de la mitad. Se abren como los demás paneles flotantes, anclados
+   bajo su botón, y por eso abrir uno cierra todo lo que comparta ese sitio. */
+const MENUS = { mArchivo:'menuArchivo', mPagina:'menuPagina', mFondo:'menuFondo',
+                mInsertar:'menuInsertar', mVista:'menuVista' };
+function cerrarMenus(){
+  for (const [b,pnl] of Object.entries(MENUS)){
+    document.getElementById(pnl).classList.remove('abierto');
+    const bt = document.getElementById(b);
+    bt.classList.remove('on'); bt.setAttribute('aria-expanded','false');
+  }
+}
+function menuAbierto(){
+  return Object.values(MENUS).some(p =>
+    document.getElementById(p).classList.contains('abierto'));
+}
+function abrirMenu(botonId){
+  const pnl = document.getElementById(MENUS[botonId]);
+  const yaEstaba = pnl.classList.contains('abierto');
+  cerrarMenus();
+  document.body.classList.remove('conFormas','conTrazo','conFondoPanel','conPuntero');
+  if (yaEstaba) return;                     // segundo toque: se cierra
+  pnl.classList.add('abierto');
+  const bt = document.getElementById(botonId);
+  bt.classList.add('on'); bt.setAttribute('aria-expanded','true');
+  anclarPanel(MENUS[botonId], botonId);
+}
+for (const b of Object.keys(MENUS)) on(b, ()=>abrirMenu(b));
+/* Tocar un botón del menú lo cierra; mover una barra o elegir en una lista, no.
+   Sin esto había que cerrarlo a mano después de cada cosa, y el panel tapaba
+   justo el trozo de pizarrón donde se acababa de insertar la imagen. */
+for (const pnl of Object.values(MENUS))
+  document.getElementById(pnl).addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('button')) setTimeout(cerrarMenus, 0);
+  });
+/* Un toque fuera cierra. En captura y con `pointerdown`, no con `click`: con
+   el Pencil el trazo empieza antes de que llegue el click y el menú se
+   quedaba abierto encima de lo que se estaba escribiendo. */
+document.addEventListener('pointerdown', e => {
+  if (!menuAbierto()) return;
+  const t = e.target;
+  if (t && t.closest && (t.closest('.menuDesp') || t.closest('.menuBtn'))) return;
+  cerrarMenus();
+}, true);
+addEventListener('resize', () => { if (menuAbierto()) cerrarMenus(); });
+
+/* ===================== opciones del puntero ===================== */
+const ptrColores = document.getElementById('ptrColores');
+PTR_COLORES.forEach((c,i)=>{
+  const b=document.createElement('button');
+  b.className='swatch'; b.style.background='rgb('+c.rgb+')';
+  b.title='Puntero '+c.n; b.setAttribute('aria-label','Puntero '+c.n);
+  b.onclick=()=>{ ui.ptrColor=i; pintarPuntero(); guardarPuntero(); };
+  ptrColores.appendChild(b);
+});
+function pintarPuntero(){
+  [...ptrColores.children].forEach((b,i)=>b.classList.toggle('on', i===ui.ptrColor));
+  const cual={ptrPunto:'punto', ptrFlecha:'flecha', ptrMano:'mano'};
+  for (const [id,f] of Object.entries(cual))
+    document.getElementById(id).classList.toggle('on', f===ui.ptrForma);
+  document.getElementById('ptrVida').value = Math.round(ui.ptrVida/1000);
+  document.getElementById('ptrVidaLbl').textContent = Math.round(ui.ptrVida/1000)+' s';
+}
+function guardarPuntero(){
+  store.set('puntero', {c:ui.ptrColor, f:ui.ptrForma, v:ui.ptrVida});
+}
+function ponerFormaPuntero(f){
+  ui.ptrForma = f;
+  if (f !== 'punto') ptr.trazos.length = 0;   // la estela era del punto
+  pintarPuntero(); guardarPuntero();
+  if (ui.tool!=='point') setTool('point'); else { drawBoard(); drawProj(); } }
+on('ptrPunto', ()=>ponerFormaPuntero('punto'));
+on('ptrFlecha',()=>ponerFormaPuntero('flecha'));
+on('ptrMano',  ()=>ponerFormaPuntero('mano'));
+document.getElementById('ptrVida').addEventListener('input', e=>{
+  ui.ptrVida = Math.max(1, +e.target.value)*1000;
+  document.getElementById('ptrVidaLbl').textContent = Math.round(ui.ptrVida/1000)+' s';
+});
+document.getElementById('ptrVida').addEventListener('change', guardarPuntero);
+pintarPuntero();
+/* ===================== acerca de =====================
+   Un programa académico que no dice de quién es no se puede citar, y uno que
+   no dice en qué estado está se usa como si estuviera terminado. */
+/* ============ la bitácora, y el informe de fallos ============ */
+
+/* Anillo de los últimos apuntes. Veinte llegan de sobra: lo que importa es el
+   primero que falló, y a partir de ahí suelen ser todos el mismo repetido. */
+const BITACORA_MAX = 20;
+const bitacora = [];
+function apuntarFallo(tipo, msg, donde){
+  const ya = bitacora.length && bitacora[bitacora.length-1];
+  // el mismo error sesenta veces por segundo no aporta nada; se cuenta
+  if (ya && ya.tipo === tipo && ya.msg === msg && ya.donde === donde){
+    ya.veces = (ya.veces || 1) + 1;
+    ya.hasta = new Date().toISOString();
+  } else {
+    bitacora.push({t:new Date().toISOString(), tipo, msg:String(msg).slice(0,400),
+                   donde:String(donde || '').slice(0,300)});
+    while (bitacora.length > BITACORA_MAX) bitacora.shift();
+  }
+  marcarFallos();
+}
+function marcarFallos(){
+  const b = document.getElementById('acercaBtn');
+  if (!b) return;
+  const n = bitacora.filter(e=>e.tipo !== 'aviso').length;
+  b.classList.toggle('conFallos', n > 0);
+  if (n) b.setAttribute('data-fallos', n > 9 ? '9+' : String(n));
+}
+addEventListener('error', e => {
+  /* Los errores de carga de una imagen o un script llegan por aquí también y
+     no traen mensaje; se distinguen por venir de un elemento y no de código. */
+  if (e.target && e.target !== window && e.target.tagName)
+    apuntarFallo('recurso', 'no cargó ' + e.target.tagName.toLowerCase(),
+                 e.target.src || e.target.href || '');
+  else
+    apuntarFallo('error', e.message || 'error sin mensaje',
+                 (e.filename || '') + (e.lineno ? ':' + e.lineno : ''));
+});
+addEventListener('unhandledrejection', e => {
+  const r = e.reason;
+  apuntarFallo('promesa', (r && (r.message || r)) || 'promesa rechazada',
+               (r && r.stack ? String(r.stack).split('\n').slice(1,3).join(' | ') : ''));
+});
+
+/* Lo que hace falta para reproducir un fallo, y nada más. Sin nombres de
+   archivo ni contenido de las clases: eso es del profesor, no del informe. */
+function informeTexto(){
+  const l = [];
+  const linea = (k, v) => l.push(k.padEnd(14) + v);
+  l.push('--- Informe de Esquisse ---');
+  linea('Versión', `${APP.version} (${APP.estado})`);
+  linea('Fecha', new Date().toISOString());
+  linea('Papel', ROLE);
+  try { linea('Modo', modoActual()); } catch { linea('Modo', '?'); }
+  linea('Pantalla', `${innerWidth}×${innerHeight} a ${window.devicePixelRatio || 1}×`
+        + (navigator.maxTouchPoints ? `, táctil (${navigator.maxTouchPoints})` : ', sin táctil'));
+  linea('Navegador', navigator.userAgent);
+  linea('Idioma', navigator.language || '?');
+  try {
+    const P = pg();
+    linea('Cuaderno', `${state.nb.pages.length} página(s), en la ${state.pi + 1}`);
+    linea('Esta página', `${P.items.length} elemento(s), revelados ${P.reveal}`
+          + `, ${(P.stops||[]).length} parada(s)`);
+  } catch { linea('Cuaderno', 'no se pudo leer'); }
+  try { linea('Enlace', net.on ? 'en pie' : 'caído'); } catch {}
+  linea('Guardado', hasStore ? 'en disco' : 'solo en memoria');
+  linea('Conexión', navigator.onLine ? 'en línea' : 'sin conexión');
+
+  const dice = document.getElementById('acQueHacia');
+  const q = dice && dice.value.trim();
+  if (q) l.push('', 'Qué hacía:', q);
+
+  if (!bitacora.length) l.push('', 'Sin errores apuntados en esta sesión.');
+  else {
+    l.push('', `Apuntes (${bitacora.length}):`);
+    for (const e of bitacora){
+      l.push(`  [${e.t.slice(11,19)}] ${e.tipo}: ${e.msg}`
+             + (e.veces ? ` (×${e.veces})` : ''));
+      if (e.donde) l.push('      ' + e.donde);
+    }
+  }
+  return l.join('\n');
+}
+function pintarInforme(){
+  const caja = document.getElementById('acInforme');
+  if (caja) caja.textContent = informeTexto();
+  const n = bitacora.filter(e=>e.tipo !== 'aviso').length;
+  const cuantos = document.getElementById('acFallosCuantos');
+  document.getElementById('acFallosCaja').classList.toggle('hay', n > 0);
+  if (cuantos) cuantos.innerHTML = n === 1
+    ? 'Se apuntó <b>un error</b> en esta sesión. Casi ninguno de estos se ve '
+      + 'mientras ocurre, así que conviene mandarlo aunque todo pareciera ir bien.'
+    : `Se apuntaron <b>${n} errores</b> en esta sesión. Casi ninguno de estos se `
+      + 've mientras ocurre, así que conviene mandarlos aunque todo pareciera ir bien.';
+}
+
+function pintarAcerca(){
+  const t = (id, v) => { const e = document.getElementById(id); if (e) e.innerHTML = v; };
+  const enlace = (u, txt) => `<a href="${u}" target="_blank" rel="noopener">${txt || u}</a>`;
+  t('acercaVer', `Versión ${APP.version} · ${APP.estado}`);
+  t('acAutor', APP.autor);
+  t('acOrcid', enlace('https://orcid.org/'+APP.orcid, APP.orcid));
+  t('acFil',   APP.filiacion);
+  t('acMail',  enlace('mailto:'+APP.correo, APP.correo));
+  t('acWeb',   enlace(APP.web));
+  t('acercaCita', citaTexto());
+  t('acDoi',    enlace('https://doi.org/'+APP.doi, APP.doi) +
+                ' <span style="color:var(--dim)">(concepto: apunta siempre a la más reciente)</span>');
+  t('acManual', enlace('https://doi.org/'+APP.doiVersion,
+                'Manual y paquete de la versión ' + APP.publicada));
+  t('acRepo',   enlace(APP.repo));
+  t('acEstado', `Esta copia es la <b>${APP.version}</b>, una etiqueta interna del `
+              + `estado del código. La única versión publicada, con DOI y manual, `
+              + `es la <b>${APP.publicada}</b> del 8 de septiembre de ${APP.anio}.`);
+  t('acCopy',   `© ${APP.anio} ${APP.autor}. Todos los derechos reservados.`);
+  /* El trámite ante el INDAUTOR consta: la página institucional de desarrollo
+     de software del autor lo asienta como en proceso, y el comprobante de
+     CIMAT del 7 de septiembre de 2026 lo registra en la misma tabla que los
+     tres programas que ya tienen certificado. Lo que no hay todavía es
+     número, así que el número no se pone hasta que exista. */
+  t('acIndautor', APP.indautor
+      ? `Registro ante INDAUTOR <b>${APP.indautor}</b>.`
+      : 'Registro ante el INDAUTOR <b>en trámite</b>. Todavía sin número: '
+      + 'cuando se otorgue aparecerá aquí, en la marca del pizarrón y en el '
+      + 'pie de cada hoja exportada.');
+  t('acPedir',  enlace('mailto:'+APP.correo+'?subject='+encodeURIComponent(
+                  'Evaluación de Esquisse '+APP.version), APP.correo));
+  t('acercaPie', `${APP.nombre} ${APP.version}`);
+}
+function abrirAcerca(){
+  pintarAcerca();
+  pintarInforme();
+  document.getElementById('acercaWrap').classList.add('open');
+}
+on('acercaBtn', abrirAcerca);
+on('acercaCerrar', ()=>document.getElementById('acercaWrap').classList.remove('open'));
+document.getElementById('acercaWrap').addEventListener('click', e=>{
+  if (e.target.id === 'acercaWrap') e.currentTarget.classList.remove('open'); });
+on('acercaCopiar', async e => {
+  const btn = e.currentTarget;
+  try{
+    await navigator.clipboard.writeText(citaTexto());
+    btn.textContent = 'Copiada';
+    setTimeout(()=>{ btn.textContent = 'Copiar la cita'; }, 1600);
+  }catch{
+    /* Sin permiso de portapapeles se selecciona, que es lo que se puede
+       ofrecer sin pedir nada. */
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById('acercaCita'));
+    const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r);
+    toast('Selecciona y copia con ⌘C.');
+  }
+});
+
+/* El informe se rehace al escribir, para que se vea que lo que se cuenta va
+   dentro y no en un sitio aparte. */
+{
+  const q = document.getElementById('acQueHacia');
+  if (q) q.addEventListener('input', pintarInforme);
+}
+on('acCopiarInforme', async e => {
+  const btn = e.currentTarget;
+  try{
+    await navigator.clipboard.writeText(informeTexto());
+    btn.textContent = 'Copiado';
+    setTimeout(()=>{ btn.textContent = 'Copiar el informe'; }, 1600);
+  }catch{
+    const r = document.createRange();
+    r.selectNodeContents(document.getElementById('acInforme'));
+    const sl = getSelection(); sl.removeAllRanges(); sl.addRange(r);
+    toast('Selecciona y copia con ⌘C.');
+  }
+});
+/* El texto no se mete en la dirección: los issues de GitHub aceptan cuerpo por
+   parámetro, pero una pila de errores lo pasa de largo y se corta a la mitad,
+   que es peor que no llevarlo. Se copia y se pega. */
+on('acIssue', async () => {
+  try{ await navigator.clipboard.writeText(informeTexto());
+       toast('Informe copiado. Pégalo en el issue.'); }
+  catch{ toast('Copia el informe de arriba y pégalo en el issue.'); }
+  open(APP.repo + '/issues/new', '_blank', 'noopener');
+});
+on('acCorreo', () => {
+  const cuerpo = informeTexto();
+  const url = 'mailto:' + APP.correo
+    + '?subject=' + encodeURIComponent(`Fallo en ${APP.nombre} ${APP.version}`)
+    + '&body=' + encodeURIComponent(cuerpo.slice(0, 1800));
+  /* Se recorta a 1800 porque hay clientes de correo que descartan la dirección
+     entera si se pasa; el informe completo se copia al portapapeles a la vez,
+     para poder pegarlo si llegara cortado. */
+  navigator.clipboard.writeText(cuerpo).catch(()=>{});
+  location.href = url;
+});
+
+on('revisarBtn', alternarRevisar);
+on('cintaAsa', alternarRevisar);
+on('ladoBtn', e => {
+  const fuera = document.body.classList.toggle('sinLado');
+  e.currentTarget.classList.toggle('on', !fuera);
+  store.set('lado', !fuera);
+  // el pizarrón cambia de ancho: hay que rehacer los lienzos y reencuadrar
+  setTimeout(()=>{ fitAll(); encuadrar(); sync(); }, 0);
+  toast(fuera ? 'Columna quitada: más ancho para escribir.'
+              : 'Columna puesta: vista de la clase y miniaturas.'); });
 /* ===================== historial =====================
    Una pila de estados de la página. Antes sólo se podía quitar el último
    trazo: un borrado con el lazo, un movimiento o un recoloreado no tenían
@@ -3962,7 +5219,7 @@ function aplicar(s){
       if (g && q && q.bgImg) Object.assign(q.bgImg, g); });
   else if (s.bg && P.bgImg) Object.assign(P.bgImg, s.bg);
   sel = []; refreshSelBar();
-  edicion(); olvidarTinta();
+  edicion();
   touch(); refreshLook(); sync();
 }
 function deshacer(){
@@ -3989,14 +5246,15 @@ function pintarHistorial(){
 function olvidarHistorial(){ hist = []; histFuturo = []; pintarHistorial(); }
 
 function quitarUltimos(n){
-  apuntar(); edicion();
   const P = pg();
   if (!P.items.length || n<=0) return 0;
   n = Math.min(n, P.items.length);
-  P.items.length = P.items.length - n;
-  P.stops = P.stops.filter(k=>k<=P.items.length);
-  P.reveal = Math.min(P.reveal, P.items.length);
-  clearSel(); touch(); sync();
+  mutar(()=>{
+    P.items.length = P.items.length - n;
+    P.stops = P.stops.filter(k=>k<=P.items.length);
+    P.reveal = Math.min(P.reveal, P.items.length);
+    clearSel();
+  });
   return n;
 }
 on('undo', deshacer);
@@ -4087,7 +5345,7 @@ function selGirar(g){
   apuntar();
   const cx=(b.x0+b.x1)/2, cy=(b.y0+b.y1)/2;
   for (const i of sel) rotateItem(items()[i], g, cx, cy);
-  edicion(); olvidarTinta(); touch(); sync();
+  edicion(); touch(); sync();
 }
 on('selGiraI', ()=>selGirar(-Math.PI/12));
 on('selGiraD', ()=>selGirar( Math.PI/12));
@@ -4135,8 +5393,13 @@ on('exp', exportFile); on('libExport', exportFile);
 on('imp', ()=>document.getElementById('fileIn').click());
 on('libImport', ()=>document.getElementById('fileIn').click());
 on('libBtn', openLib); on('libClose', ()=>libWrap.classList.remove('open'));
-on('libNew', async ()=>{ await persist(); state.nb=newNotebook(); state.pi=0; sel=[]; olvidarHistorial();
-  refreshSelBar(); libWrap.classList.remove('open'); refreshLook(); sync(); touch();
+on('libNew', async ()=>{
+  await persist();
+  abrirCuaderno(newNotebook());
+  libWrap.classList.remove('open');
+  /* El campo del nombre vive dentro de un menú, y enfocarlo cerrado no hace
+     nada: hay que abrirlo primero. */
+  abrirMenu('mArchivo');
   document.getElementById('nbName').focus(); });
 libWrap.addEventListener('click', e=>{ if (e.target===libWrap) libWrap.classList.remove('open'); });
 
@@ -4158,10 +5421,21 @@ function moverPagina(d){
 on('pIzq', ()=>moverPagina(-1));
 on('pDer', ()=>moverPagina(+1));
 
-on('addStop', ()=>{ const P=pg();
-  if (!P.stops.includes(P.reveal)){ apuntar(); P.stops.push(P.reveal); P.stops.sort((a,b)=>a-b); touch(); }
-  drawRibbon(); });
-on('delStop', ()=>{ const P=pg(); apuntar(); P.stops=P.stops.filter(k=>k!==P.reveal); touch(); drawRibbon(); });
+/* Poner y quitar stop tenía tres implementaciones, con tres copias del
+   ordenado y del filtro, y semánticas distintas: una comprobaba antes de
+   apuntar al historial y las otras dos no. */
+function alternarStop(quiero){
+  const P = pg();
+  const hay = P.stops.includes(P.reveal);
+  const poner = quiero === undefined ? !hay : quiero;
+  mutar(()=>{
+    if (poner){ P.stops.push(P.reveal); P.stops.sort((a,b)=>a-b); }
+    else P.stops = P.stops.filter(k => k !== P.reveal);
+  }, {nadaQueHacer: ()=> poner === hay});
+  return poner;
+}
+on('addStop', ()=> alternarStop(true));
+on('delStop', ()=> alternarStop(false));
 on('toStart',()=>playTo(0)); on('prevStop',prevStop); on('nextStop',nextStop);
 on('dPrev',prevStop); on('dNext',nextStop);
 on('dUndo', deshacer); on('dRedo', rehacer); on('toEnd',()=>playTo(pg().items.length));
@@ -4188,6 +5462,15 @@ on('wMenos', ()=> ponerGrosor(grosorActual() - .5));
 on('wMas',   ()=> ponerGrosor(grosorActual() + .5));
 on('fondoPanelBtn', ()=>{
   construirPanelFondo();
+  // `setTool` ya cierra el de fondo al abrir el de trazo. Faltaba el sentido
+  // contrario: las opciones de trazo caían enteras encima de las miniaturas
+  // de papel, y como van después en el documento, se pintaban por delante.
+  /* Y también las de forma, las de puntero y los menús. Quitaba solo las de
+     trazo, así que con las opciones de puntero abiertas la primera fila entera
+     de miniaturas de papel quedaba enterrada: tres de los ocho fondos eran
+     inalcanzables. */
+  document.body.classList.remove('conTrazo','conFormas','conPuntero');
+  cerrarMenus();
   const abierto = document.body.classList.toggle('conFondoPanel');
   if (abierto){ marcarPapelElegido(); setTimeout(()=>anclarPanel('panelFondo','fondoPanelBtn'),0); }
 });
@@ -4200,18 +5483,18 @@ function encajar(modo){
   if (!pg().bgImg){ toast('Esta página no tiene fondo.'); return; }
   apuntar(); ultimoEncaje.modo = modo;
   encajarFondo(pg(), modo);
-  edicion(); olvidarTinta(); touch(); sync();
+  edicion(); touch(); sync();
 }
 on('bgAncho', ()=>encajar('ancho'));
 on('bgAlto',  ()=>encajar('alto'));
 on('bgLlenar',()=>encajar('llenar'));
 on('bgEntero',()=>encajar('entero'));
-on('bgMas',   ()=>{ apuntar(); escalarFondo(pg(), 1.12); edicion(); olvidarTinta(); touch(); sync(); });
-on('bgMenos', ()=>{ apuntar(); escalarFondo(pg(), 1/1.12); edicion(); olvidarTinta(); touch(); sync(); });
+on('bgMas',   ()=> mutar(()=> escalarFondo(pg(), 1.12),   {nadaQueHacer: ()=>!pg().bgImg}));
+on('bgMenos', ()=> mutar(()=> escalarFondo(pg(), 1/1.12), {nadaQueHacer: ()=>!pg().bgImg}));
 on('bgTodas', ()=>{
   apuntar(true);
   const n = encajarTodas(ultimoEncaje.modo);
-  edicion(); olvidarTinta(); touch(); sync();
+  edicion(); touch(); sync();
   toast(n + ' página(s) encajadas igual.');
 });
 on('bgListo', ()=> setTool('pen'));
@@ -4278,6 +5561,7 @@ document.addEventListener('keydown', e=>{
   else if (e.key==='s'||e.key==='S') document.getElementById('addStop').click();
   else if (e.key==='p'||e.key==='P') setTool(ui.tool==='point'?'pen':'point');
   else if (e.key==='q'||e.key==='Q'){ if (ROLE==='proyeccion') toggleQR(); }
+  else if (e.key==='r'||e.key==='R') alternarRevisar();
   else if (e.key==='l'||e.key==='L') setTool('lasso');
   else if (e.key==='m'||e.key==='M') setTool('hl');
   else if (e.key==='t'||e.key==='T') setTool('text');
@@ -4287,7 +5571,10 @@ document.addEventListener('keydown', e=>{
     else if (ui.editar){ e.preventDefault(); borrarAnterior(); }
   }
   else if (e.key==='Escape'){
-    if (texEd.classList.contains('open')) closeTexEditor();
+    if (document.getElementById('acercaWrap').classList.contains('open'))
+      document.getElementById('acercaWrap').classList.remove('open');
+    else if (menuAbierto()) cerrarMenus();
+    else if (texEd.classList.contains('open')) closeTexEditor();
     else if (libWrap.classList.contains('open')) libWrap.classList.remove('open');
     else if (sel.length) clearSel();
     else setClase(false);
@@ -4297,9 +5584,23 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
 
 /* ===================== arranque ===================== */
 (async function boot(){
-  const idx = ((await store.get('index'))||[]).sort((a,b)=>b.updated-a.updated);
-  if (idx.length){ const nb = await store.get('nb:'+idx[0].id);
-    if (nb){ state.nb = migrate(nb); state.pi = 0; } }
+  /* Recuperar el cuaderno guardado va dentro de un `try` y el resto del
+     arranque fuera. Un `index` que no sea arreglo revienta en `.sort`, y un
+     cuaderno con un elemento nulo revienta en `fixItem`. Sin esto, esos dos
+     casos se llevaban por delante `conectar()`, `fitAll()` y `sync()`: la
+     aplicación abría, se veía normal, los botones estaban, y el iPad no
+     enlazaba nunca. Sin ningún síntoma, que en un aula es lo peor que puede
+     pasar. Los dos casos están comprobados en `prueba_arranque.mjs`. */
+  let idx = [];
+  try{
+    const guardado = await store.get('index');
+    idx = Array.isArray(guardado) ? guardado.slice().sort((a,b)=>b.updated-a.updated) : [];
+    if (idx.length){ const nb = await store.get('nb:'+idx[0].id);
+      if (nb){ state.nb = migrate(nb); state.pi = 0; miniFirma.clear(); } }
+  }catch(err){
+    console.error('el cuaderno guardado no se pudo leer, se abre uno en blanco', err);
+    state.nb = newNotebook(); state.pi = 0; idx = [];
+  }
   /* Si no había nada guardado en el aparato, se recoge el último cuaderno del
      servidor. Sin esto, guardar y no leer dejaba el trabajo escrito en disco
      pero la app arrancaba en blanco: una recarga a media clase se llevaba
@@ -4311,11 +5612,11 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
         lista.sort((a,b)=>b.modificado-a.modificado);
         const d = await (await pedir('/cuadernos/'+encodeURIComponent(lista[0].archivo))).json();
         if (d && (d.pages || d.doc || d.strokes)){
-          state.nb = migrate(await traerFondos(d)); state.pi = 0; }
+          state.nb = migrate(await traerFondos(d)); state.pi = 0; miniFirma.clear(); }
       }
     }catch{ /* sin servidor se sigue con el cuaderno en blanco */ }
   }
-  clip = await store.get('clipboard');
+  try{ clip = await store.get('clipboard'); }catch{ clip = null; }
   if (ROLE === 'alumno'){
     document.body.classList.add('proyeccion','alumno');
     document.getElementById('openProj').style.display = 'none';
@@ -4326,6 +5627,25 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
     document.getElementById('openProj').style.display = 'none';
     mostrarEmparejamiento();
     document.getElementById('linkBtn').addEventListener('click', toggleQR);
+    /* Pantalla completa, que es lo que hace compartible la ventana: sin ella el
+       público de Zoom o Meet ve las pestañas y la barra de direcciones. También
+       con la tecla F, que es lo que se busca a ciegas. */
+    document.getElementById('projFull').addEventListener('click', toggleFull);
+    document.addEventListener('keydown', e=>{
+      if ((e.key === 'f' || e.key === 'F') &&
+          !['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) toggleFull();
+    });
+    /* Los dos botones se apartan cuando nadie toca nada. La proyección durante
+       la clase tiene que ser el pizarrón y nada más. */
+    let quietaT = null;
+    const despertar = () => {
+      document.body.classList.remove('quieta');
+      clearTimeout(quietaT);
+      quietaT = setTimeout(()=>document.body.classList.add('quieta'), 3000);
+    };
+    ['mousemove','pointerdown','keydown'].forEach(ev =>
+      document.addEventListener(ev, despertar, {passive:true}));
+    despertar();
     document.getElementById('espera').addEventListener('click', () => {
       if (!document.body.classList.contains('vacio')) cerrarQR();
     });
@@ -4343,6 +5663,7 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
     const inp = document.getElementById('miNombre');
     if (inp) inp.onchange = e => ponerNombre(e.target.value);
     setInterval(pintarGente, 20000);
+    setInterval(vigilarSilencio, 5000);
     // los nombres vienen apagados; quien los quiera, los enciende y se recuerda
     store.get('reglas').then(v=>{
       if (v === false){ ui.reglas = false;
@@ -4358,9 +5679,34 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
       const tactil = matchMedia('(pointer:coarse)').matches;
       ponerCinta(v || (tactil ? 'arriba' : 'abajo'));
     });
+    /* El modo de fábrica es «escribir». En un iPad devuelve entre el 45 y el
+       62 % de área de escritura, que es la diferencia entre media pantalla y
+       tres cuartos. La cinta sigue ahí, en una tira de 18 px que se arrastra
+       igual, y «Cinta ▴» la abre entera. */
+    if (ROLE === 'control'){
+      document.body.classList.add('escribir');
+      store.get('modo').then(v=>{
+        if (v === 'revisar') document.body.classList.remove('escribir');
+        marcarModo();
+        setTimeout(()=>{ fitAll(); encuadrar(); sync(); }, 0);
+      });
+    }
+    store.get('lado').then(v=>{
+      if (v === false){ document.body.classList.add('sinLado');
+        document.getElementById('ladoBtn').classList.remove('on');
+        setTimeout(()=>{ fitAll(); encuadrar(); sync(); }, 0); } });
+    store.get('puntero').then(v=>{
+      if (!v) return;
+      if (v.c != null) ui.ptrColor = v.c;
+      if (v.f) ui.ptrForma = v.f;
+      if (v.v) ui.ptrVida = v.v;
+      pintarPuntero(); });
     store.get('lupaAlto').then(v=>{ if (v) ponerAltoLupa(v); });
     store.get('lupa').then(v=>{ if (v) ponerLupa(true); });
     if (!hasStore) document.getElementById('savedLbl').textContent = 'solo memoria';
+    /* Una primera medida al arrancar, para que el aviso de «sin enlace» ya
+       nazca debajo de la barra aunque nadie cambie de modo ni gire el iPad. */
+    medirCromo();
     refreshOffline();
     setTimeout(primeLibs, 1200);
     window.addEventListener('online',  ()=>{ primeLibs(); toast('De vuelta en línea.'); });

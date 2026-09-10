@@ -3,6 +3,8 @@
    Una página vertical dentro de un marco apaisado se lee pequeña si solo
    cabe entera; a lo ancho se lee, y entonces hay que poder desplazarla. */
 import { chromium } from 'playwright';
+import { sembrarLibs } from './libs.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 /* Vertical a propósito: estas pruebas miran qué pasa al meter una página
    alta en un marco apaisado. Los PDF que exporta la app son 16:9 y encajan
@@ -11,7 +13,9 @@ const PDF = process.env.PDF || new URL('./muestra_vertical.pdf', import.meta.url
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
-const c=await (await nav.newContext({viewport:{width:1280,height:860}})).newPage();
+const ctx=await nav.newContext({viewport:{width:1280,height:860}});
+await sembrarLibs(ctx, ['pdfjs','pdfworker']);
+const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(4000);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarHistorial(); olvidarTinta(); sync(); });
@@ -27,7 +31,7 @@ console.log('páginas del PDF:', paginas, '· fondo inicial:', JSON.stringify(aw
 const ini = await fondo();
 check('el PDF entra encajado entero', ini.h===M.h && ini.w < M.w, JSON.stringify(ini));
 
-await c.click('#fondoBtn'); await c.waitForTimeout(300);
+await tocar(c, 'fondoBtn'); await c.waitForTimeout(300);
 check('el modo de ajuste se enciende',
       await c.evaluate(()=>ui.tool==='fondo' && document.body.classList.contains('ajustandoFondo')));
 

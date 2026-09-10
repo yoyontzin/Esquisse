@@ -1,0 +1,22 @@
+name: Sugerir algo
+description: Falta algo, o estorba algo, aunque no esté roto.
+title: "[sugerencia] "
+labels: ["sugerencia"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Antes de escribir, mira `EVALUACION.md` › «Lo que ya se sabe que falta»
+        y `SUGERENCIAS.md`, por si ya está apuntado.
+  - type: textarea
+    id: que
+    attributes:
+      label: Qué echas en falta, o qué estorba
+      description: Y sobre todo, en qué momento de dar clase te hizo falta.
+    validations:
+      required: true
+  - type: textarea
+    id: hoy
+    attributes:
+      label: Cómo lo resuelves hoy
+      description: Si hay una manera de salir del paso, decirla ayuda a medir cuánto urge.

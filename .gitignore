@@ -1,19 +1,22 @@
+# Paquete de macOS: lo genera crear_app_mac.sh
+Pizarrón.app/
+crear_app_mac.command
+
 # Cuadernos de clase: son datos, no fuente
 cuadernos/
+
+# El paquete de descarga se reconstruye; la ficha sí se versiona
+distribucion/*.zip
+distribucion/*.zip.sha256
 
 # Pruebas
 pruebas/node_modules/
 pruebas/capturas/
 pruebas/package-lock.json
-pruebas/*.png
-# menos el PDF de entrada que las pruebas de fondo necesitan
 pruebas/*.pdf
+# menos el PDF de entrada que las pruebas de fondo necesitan para correr
 !pruebas/muestra_vertical.pdf
-
-# El paquete de la app se construye, no se versiona
-Esquisse.app/
-Pizarrón.app/
-crear_app_mac.command
+pruebas/*.png
 
 # Basura del sistema y de Python
 .DS_Store

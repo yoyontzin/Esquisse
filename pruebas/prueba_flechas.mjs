@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -7,7 +8,7 @@ const c=await (await nav.newContext({viewport:{width:1440,height:900}})).newPage
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto((process.env.BASE||BASE)+'/?rol=control'); await c.waitForTimeout(2500);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarHistorial(); olvidarTinta(); sync(); });
-await c.selectOption('#paper','gis'); await c.waitForTimeout(800);
+await elegir(c, 'paper', 'gis'); await c.waitForTimeout(800);
 const b=await c.locator('#board').boundingBox();
 async function arrastra(x0,y0,x1,y1){
   await c.mouse.move(b.x+x0,b.y+y0); await c.mouse.down();

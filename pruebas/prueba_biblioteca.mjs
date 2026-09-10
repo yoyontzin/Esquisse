@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const B = process.env.BASE || BASE;
 const ok=[],mal=[];
@@ -28,7 +29,7 @@ check('las dos clases quedan guardadas en la computadora',
 const ipad=await (await nav.newContext({viewport:{width:1180,height:820}, hasTouch:true})).newPage();
 ipad.on('pageerror',e=>errs.push('ipad: '+e.message));
 await ipad.goto(BASE+'/?rol=control'); await ipad.waitForTimeout(3000);
-await ipad.click('#libBtn'); await ipad.waitForTimeout(1200);
+await tocar(ipad, 'libBtn'); await ipad.waitForTimeout(1200);
 const filas = await ipad.evaluate(()=>[...document.querySelectorAll('#libList .nbrow .nm')].map(e=>e.textContent));
 console.log('lo que ve el iPad:', JSON.stringify(filas));
 check('el iPad ve los cuadernos de la computadora', filas.length>=2, filas.join(', '));

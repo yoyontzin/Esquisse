@@ -1,4 +1,6 @@
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -8,13 +10,14 @@ const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 c.on('console',m=>{if(m.type()==='error')errs.push('consola: '+m.text());});
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
+await revisar(c);
 
 const b=await c.locator('#board').boundingBox();
 async function trazo(x0,y0,x1,y1){await c.mouse.move(b.x+x0,b.y+y0);await c.mouse.down();
   for(let i=1;i<=12;i++)await c.mouse.move(b.x+x0+(x1-x0)*i/12,b.y+y0+(y1-y0)*i/12);
   await c.mouse.up();await c.waitForTimeout(45);}
 
-await c.selectOption('#paper','gis');
+await elegir(c, 'paper', 'gis');
 await c.waitForTimeout(1200);
 
 // --- grosor: el punto sigue al deslizador ---
@@ -52,7 +55,7 @@ const antes = await c.evaluate(()=>state.nb.pages[0].items.length);
 for (let i=0;i<5;i++) await trazo(250+i*70,470,300+i*70,560);   // una ráfaga seguida
 await c.waitForTimeout(300);
 const conRafaga = await c.evaluate(()=>state.nb.pages[0].items.length);
-await c.click('#undoRafaga'); await c.waitForTimeout(500);
+await tocar(c, 'undoRafaga'); await c.waitForTimeout(500);
 const despues = await c.evaluate(()=>state.nb.pages[0].items.length);
 check('borrar lo último quita la ráfaga entera, no un trazo',
       conRafaga===antes+5 && despues===antes, `${antes} -> ${conRafaga} -> ${despues}`);
@@ -65,7 +68,7 @@ const u2 = await c.evaluate(()=>state.nb.pages[0].items.length);
 check('deshacer sigue quitando un solo trazo', u2===u1-1, `${u1} -> ${u2}`);
 
 // --- página intermedia ---
-await c.click('#pAdd'); await c.waitForTimeout(500);
+await tocar(c, 'pAdd'); await c.waitForTimeout(500);
 const pgs = await c.evaluate(()=>({n:state.nb.pages.length, i:state.pi,
   vacia:state.nb.pages[state.pi].items.length===0}));
 check('la página nueva entra después de la actual y llega vacía',

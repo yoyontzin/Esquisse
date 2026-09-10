@@ -1,4 +1,6 @@
 import { chromium } from 'playwright';
+const ok=[],mal=[];
+const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const nav=await chromium.launch();
 const c=await (await nav.newContext({viewport:{width:1180,height:820}})).newPage();
@@ -43,6 +45,16 @@ await c.evaluate(()=>{
 await c.waitForTimeout(500);
 const fin = await c.evaluate(()=>pg().items.length);
 console.log(`se puede seguir escribiendo: ${fin > r.n ? 'SÍ' : 'NO'} (${r.n} -> ${fin})`);
-console.log(r.nulos===0 && r.sanos && fin>r.n ? '\nOK' : '\nFALLA');
-if(errs.length) console.log('ERRORES:', [...new Set(errs)].join(' | '));
+check('alternar pluma y marcador no mete nulos', r.nulos===0, String(r.nulos)+' nulos');
+check('los trazos quedan sanos', r.sanos===true);
+check('se puede seguir escribiendo después', fin>r.n, `${r.n} -> ${fin}`);
+check('sin errores de JavaScript', errs.length===0, [...new Set(errs)].join(' | '));
 await nav.close();
+
+/* Estas cinco pruebas imprimían su veredicto y salían con código cero pasara
+   lo que pasara: `correr.sh` las contaba en verde incluso escribiendo «SE
+   PIERDE EL TRABAJO». El 12 % del contrato era decorativo. */
+console.log(ok.map(s=>'  ok  '+s).join('\n'));
+if (mal.length) console.log(mal.map(s=>'  MAL '+s).join('\n'));
+console.log(`marcador: ${ok.length} correctas, ${mal.length} fallidas`);
+process.exit(mal.length ? 1 : 0);

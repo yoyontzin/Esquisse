@@ -1,0 +1,59 @@
+name: Informar de un fallo
+description: Algo se rompió, se perdió trabajo, o el programa hizo lo que no debía.
+title: "[fallo] "
+labels: ["fallo"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por probarlo. El informe que trae el programa dentro ahorra la
+        mitad de las preguntas: **Acerca › Informar de un fallo › Copiar el
+        informe**. Lleva versión, navegador, tamaño de pantalla y los errores
+        que ocurrieron, y no lleva nada de lo que hayas escrito en la clase.
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: Qué pasó
+      description: Qué esperabas y qué ocurrió en su lugar.
+      placeholder: Pasé de página y al volver la anterior estaba en blanco.
+    validations:
+      required: true
+  - type: textarea
+    id: como-repetirlo
+    attributes:
+      label: Cómo repetirlo
+      description: Los pasos, aunque parezcan obvios. Si no lo has vuelto a ver, dilo también: eso es información.
+      placeholder: |
+        1. Abrir el pizarrón en el iPad
+        2. Escribir dos renglones
+        3. Botón de página siguiente
+        4. Volver atrás
+    validations:
+      required: true
+  - type: textarea
+    id: informe
+    attributes:
+      label: El informe del programa
+      description: Pegado tal cual desde Acerca › Informar de un fallo.
+      render: text
+  - type: dropdown
+    id: perdio
+    attributes:
+      label: ¿Se perdió trabajo escrito?
+      options:
+        - "No"
+        - "Sí, algo"
+        - "Sí, la clase entera"
+    validations:
+      required: true
+  - type: dropdown
+    id: donde
+    attributes:
+      label: ¿Dónde estabas?
+      options:
+        - Tableta escribiendo
+        - Computadora escribiendo
+        - Proyección
+        - Vista de alumno
+    validations:
+      required: true

@@ -2,14 +2,19 @@
    completadas a mano encima y pasadas una a una. Es como se da el curso de
    geometría algebraica, así que conviene que esté cubierto de punta a punta. */
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { sembrarLibs } from './libs.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
 const ctx=await nav.newContext({viewport:{width:1280,height:860}, acceptDownloads:true});
+await sembrarLibs(ctx, ['jspdf']);
 const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(4000);
+await revisar(c);
 
 /* Primero se fabrican tres diapositivas 16:9 con un hueco cada una, se
    exportan a PDF desde la propia app y se vuelven a traer: así la prueba no
@@ -83,7 +88,7 @@ check('y revelarla de un salto', await c.evaluate(()=>pg().reveal)===1);
 // --- exportar la clase completa, diapositiva y anotación juntas ---
 const [dl] = await Promise.all([
   c.waitForEvent('download',{timeout:30000}),
-  (async()=>{ await c.click('#pdf'); await c.waitForTimeout(500);
+  (async()=>{ await tocar(c, 'pdf'); await c.waitForTimeout(500);
               await c.fill('#pdfPags','todas');
               if (await c.locator('#pdfEtapas').isChecked()) await c.click('#pdfEtapas');
               await c.click('#pdfOk'); })(),

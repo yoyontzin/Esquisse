@@ -1,12 +1,18 @@
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { sembrarLibs } from './libs.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 import fs from 'fs';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
-const c=await (await nav.newContext({viewport:{width:1440,height:900}, acceptDownloads:true})).newPage();
+const ctx=await nav.newContext({viewport:{width:1440,height:900}, acceptDownloads:true});
+await sembrarLibs(ctx, ['jspdf']);
+const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto((process.env.BASE||BASE)+'/?rol=control'); await c.waitForTimeout(4000);
+await revisar(c);
 
 // tres páginas con stops
 const b=await c.locator('#board').boundingBox();
@@ -20,7 +26,7 @@ for (let pg=0; pg<3; pg++){
   await c.click('#addStop'); await c.waitForTimeout(100);
   await c.evaluate(()=>{ pg().reveal=6; });
   await c.click('#addStop'); await c.waitForTimeout(100);
-  if (pg<2){ await c.click('#pAdd'); await c.waitForTimeout(400); }
+  if (pg<2){ await tocar(c, 'pAdd'); await c.waitForTimeout(400); }
 }
 console.log('páginas:', await c.evaluate(()=>state.nb.pages.length));
 
@@ -43,7 +49,7 @@ check('lista mixta', rangos.mixto.join()==='0,2', JSON.stringify(rangos.mixto));
 check('lo que se sale del cuaderno se descarta', rangos.fuera.length===0, JSON.stringify(rangos.fuera));
 
 async function exportar(pags, etapas){
-  await c.click('#pdf'); await c.waitForTimeout(400);
+  await tocar(c, 'pdf'); await c.waitForTimeout(400);
   await c.fill('#pdfPags', pags);
   const chk = await c.locator('#pdfEtapas').isChecked();
   if (chk !== etapas) await c.click('#pdfEtapas');

@@ -107,12 +107,77 @@ def _clave_acceso():
 
 CLAVE = _clave_acceso()
 
+
+def _clave_lectura():
+    """La clave que se reparte a los alumnos, que solo sirve para mirar.
+
+    Hasta la versión 1 había una sola clave para todo, y el enlace que se le
+    daba al grupo la llevaba dentro. El rol vivía solo en el navegador, así
+    que cualquier alumno con las herramientas de desarrollo abiertas podía
+    mandar un `page` a `/empujar` y reemplazar la clase por una página en
+    blanco. Se comprobó: la proyección se vaciaba y el servidor guardaba esa
+    página como último estado, de modo que también se la servía a quien
+    llegara después.
+
+    Ahora son dos. La de escritura es la de siempre y sigue siendo estable,
+    porque el ícono de la pantalla de inicio del iPad la lleva y cambiarla
+    cada arranque obligaría a reemparejar cada mañana. La de lectura es la
+    única que sale en el enlace del grupo.
+    """
+    if not CLAVE:
+        return ""                       # sin clave configurada, todo abierto
+    ruta = os.path.join(CUADERNOS, ".clave-lectura")
+    try:
+        if os.path.exists(ruta):
+            guardada = open(ruta, encoding="utf-8").read().strip()
+            if guardada:
+                return guardada
+    except OSError:
+        pass
+    alfabeto = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    nueva = "".join(secrets.choice(alfabeto) for _ in range(8))
+    try:
+        os.makedirs(CUADERNOS, exist_ok=True)
+        with open(ruta, "w", encoding="utf-8") as f:
+            f.write(nueva)
+        os.chmod(ruta, 0o600)
+    except OSError:
+        pass
+    return nueva
+
+
+CLAVE_LECTURA = _clave_lectura()
+
+# Tope del cuerpo de una petición. Un PDF de dieciocho páginas rasterizado no
+# llega a esto, y sin tope un cliente con la clave puede llenar la memoria y
+# el disco del profesor a media clase mandando cuerpos de varios gigas.
+MAX_CUERPO = 48 * 1024 * 1024
+# Tope de conexiones a la vez. `ThreadingHTTPServer` lanza un hilo por
+# conexión en el momento de aceptarla, antes de leer un byte y antes de
+# comprobar la clave, así que sin tope cualquiera en el wifi tumba el
+# servidor abriendo sockets que no completa.
+MAX_CONEXIONES = 64
+
 # Cada cliente conectado tiene su propia cola de mensajes.
 _clientes = {}
 _siguiente_id = [0]
 _candado = threading.Lock()
 # Último estado completo, para que quien llegue tarde no vea una pantalla vacía.
 _ultimo_estado = [None]
+# Qué papel tiene cada canal abierto, para poder decir quién sigue ahí.
+_papeles = {}
+
+
+def anunciar_quienes():
+    """Dice a todos qué papeles siguen conectados.
+
+    Se manda al entrar y al salir cualquiera. Es lo que permite que el iPad del
+    profesor avise cuando la proyección se cae, que es el fallo que en clase no
+    da ningún síntoma.
+    """
+    with _candado:
+        roles = sorted(set(_papeles.values()))
+    difundir({"t": "quienes", "roles": roles})
 
 
 def difundir(mensaje, excepto=None):
@@ -152,8 +217,13 @@ def ips_locales():
 
 
 # ---------------------------------------------------------------- icono
-def _png(ancho, alto, pixeles):
-    """Escribe un PNG mínimo sin dependencias externas."""
+def _png(ancho, alto, pixeles, alfa=False):
+    """Escribe un PNG mínimo sin dependencias externas.
+
+    Con `alfa` cada píxel lleva cuatro bytes en vez de tres y el PNG sale en
+    color verdadero con transparencia, que es lo que necesita el ícono de
+    macOS para dejar el margen alrededor del cuadrado redondeado.
+    """
     import struct, zlib
 
     def trozo(tipo, datos):
@@ -161,33 +231,89 @@ def _png(ancho, alto, pixeles):
         return c + struct.pack(">I", zlib.crc32(tipo + datos) & 0xFFFFFFFF)
 
     crudo = b"".join(b"\x00" + bytes(fila) for fila in pixeles)
+    tipo_color = 6 if alfa else 2
     return (b"\x89PNG\r\n\x1a\n"
-            + trozo(b"IHDR", struct.pack(">IIBBBBB", ancho, alto, 8, 2, 0, 0, 0))
+            + trozo(b"IHDR", struct.pack(">IIBBBBB", ancho, alto, 8, tipo_color, 0, 0, 0))
             + trozo(b"IDAT", zlib.compress(crudo, 9))
             + trozo(b"IEND", b""))
 
 
-def icono_png(lado=512):
-    """Pizarrón oscuro con un trazo de gis y una marca de stop ámbar."""
-    fondo = (0x25, 0x38, 0x2F)
+_FONDO_ICONO = (0x25, 0x38, 0x2F)
+
+
+def _color_icono(u, v):
+    """El dibujo, en coordenadas de 0 a 1: pizarrón oscuro con un trazo de gis
+    y una marca de stop ámbar. Lo comparten los dos formatos de ícono."""
     gis = (0xF4, 0xF1, 0xE8)
     ambar = (0xE8, 0xB3, 0x3C)
+    # trazo diagonal grueso, con un quiebre a media altura
+    centro = 0.30 + 0.42 * v if v < 0.55 else 0.52 + 0.10 * (v - 0.55)
+    if abs(u - centro) < 0.075 - 0.03 * abs(v - 0.5):
+        return gis
+    # marca de stop a la derecha
+    if 0.78 < u < 0.87 and 0.22 < v < 0.78:
+        return ambar
+    return _FONDO_ICONO
+
+
+def icono_png(lado=512):
+    """El ícono que sirve el servidor. Sangra a propósito: el manifiesto lo
+    declara «maskable» y ahí recorta el sistema operativo, no nosotros."""
     filas = []
     for y in range(lado):
         fila = bytearray()
         for x in range(lado):
-            u, v = x / lado, y / lado
-            color = fondo
-            # trazo diagonal grueso, con un quiebre a media altura
-            centro = 0.30 + 0.42 * v if v < 0.55 else 0.52 + 0.10 * (v - 0.55)
-            if abs(u - centro) < 0.075 - 0.03 * abs(v - 0.5):
-                color = gis
-            # marca de stop a la derecha
-            if 0.78 < u < 0.87 and 0.22 < v < 0.78:
-                color = ambar
-            fila += bytes(color)
+            fila += bytes(_color_icono(x / lado, y / lado))
         filas.append(fila)
     return _png(lado, lado, filas)
+
+
+def icono_mac_png(lado=1024):
+    """El ícono de la aplicación de macOS, con su margen y sus esquinas.
+
+    Las proporciones son las de la retícula de Apple: en 1024 px el dibujo
+    ocupa 824 y quedan 100 de margen a cada lado, o sea el 9.77 %. La esquina
+    no es un arco de círculo sino una superelipse, que es lo que da la forma
+    continua de los íconos del sistema; con un arco se nota el punto donde el
+    lado recto se convierte en curva.
+
+    El borde se suaviza con la distancia a la curva en vez de por muestreo
+    múltiple: a 1024 px son un millón de píxeles y esto se ejecuta en Python
+    puro, sin bibliotecas, al construir la aplicación.
+    """
+    margen = 0.09765625                      # 100 de 1024
+    dentro = 1.0 - 2 * margen                # 824 de 1024
+    a = dentro / 2                           # medio lado del cuadrado
+    radio = 0.225 * dentro                   # 185.4 de 824
+    n = 4.0                                  # exponente de la esquina
+    filas = []
+    for y in range(lado):
+        fila = bytearray()
+        v = (y + 0.5) / lado
+        for x in range(lado):
+            u = (x + 0.5) / lado
+            dx, dy = abs(u - 0.5), abs(v - 0.5)
+            # cuánto se mete el punto dentro de la esquina; cero en los lados
+            # rectos, que es lo que distingue esta forma de una superelipse
+            # pura y le deja los lados largos que tienen los íconos de macOS
+            px, py = max(0.0, dx - (a - radio)), max(0.0, dy - (a - radio))
+            if px == 0.0 and py == 0.0:
+                d = min(a - dx, a - dy) * lado
+            else:
+                q = ((px / radio) ** n + (py / radio) ** n) ** (1.0 / n) * radio
+                d = (radio - q) * lado
+            if d >= 0.5:
+                alfa = 255
+            elif d <= -0.5:
+                fila += b"\x00\x00\x00\x00"
+                continue
+            else:
+                alfa = int(round((d + 0.5) * 255))
+            # el dibujo se estira hasta llenar el cuadrado redondeado
+            color = _color_icono((u - margen) / dentro, (v - margen) / dentro)
+            fila += bytes(color) + bytes((alfa,))
+        filas.append(fila)
+    return _png(lado, lado, filas, alfa=True)
 
 
 _ICONO = [None]
@@ -481,9 +607,37 @@ class Manejador(BaseHTTPRequestHandler):
         self._responder(codigo, json.dumps(obj, ensure_ascii=False).encode("utf-8"),
                         "application/json; charset=utf-8")
 
+    # Corta a los lectores muertos y al que abre y no manda nada. Sin esto el
+    # hilo se queda bloqueado en `readline` para siempre.
+    timeout = 20
+
     def _leer_cuerpo(self):
-        n = int(self.headers.get("Content-Length", "0"))
+        """Lee el cuerpo, acotado y validando la cabecera.
+
+        Sin validar, un `Content-Length` no numérico lanza y devuelve un 500
+        con traza, y uno negativo hace que `read(-1)` lea hasta que el cliente
+        cierre, con el hilo ocupado mientras tanto.
+        """
+        crudo = self.headers.get("Content-Length", "0")
+        try:
+            n = int(crudo)
+        except (TypeError, ValueError):
+            n = -1
+        if n < 0 or n > MAX_CUERPO:
+            self._cuerpo_rechazado = True
+            return b""
         return self.rfile.read(n) if n else b""
+
+    def _cuerpo_o_error(self):
+        """Devuelve el cuerpo, o None si ya se respondió con un error."""
+        self._cuerpo_rechazado = False
+        datos = self._leer_cuerpo()
+        if self._cuerpo_rechazado:
+            self._responder(413, b"cuerpo demasiado grande",
+                            extra={"Connection": "close"})
+            self.close_connection = True
+            return None
+        return datos
 
     # ---------- acceso ----------
     def _es_local(self):
@@ -495,17 +649,27 @@ class Manejador(BaseHTTPRequestHandler):
         q = parse_qs(urlparse(self.path).query)
         return (q.get("k", [""])[0] or self.headers.get("X-Clave", "")).strip()
 
-    def _autorizado(self):
+    def _autorizado(self, escribir=False):
         """Sin clave configurada, o desde la propia máquina, pasa todo.
 
-        Lo de fuera tiene que traerla. Se compara en tiempo constante porque
-        el que la adivina a ciegas puede medir cuánto tarda el rechazo.
+        Lo de fuera tiene que traerla, y hay dos. La de escritura vale para
+        todo. La de lectura, que es la que lleva el enlace del grupo, solo
+        deja mirar: sin esta separación cualquier alumno podía sobrescribir
+        la clase, porque el rol vivía únicamente en el navegador.
+
+        Se compara en tiempo constante porque el que la adivina a ciegas
+        puede medir cuánto tarda el rechazo.
         """
         if not CLAVE or self._es_local():
             return True
-        return secrets.compare_digest(self._clave_dada(), CLAVE)
+        dada = self._clave_dada()
+        if secrets.compare_digest(dada, CLAVE):
+            return True
+        if escribir or not CLAVE_LECTURA:
+            return False
+        return secrets.compare_digest(dada, CLAVE_LECTURA)
 
-    def _rechazar(self):
+    def _rechazar(self, texto="Falta la clave de esta sesión. Vuelve a leer el código QR de la pantalla."):
         """Rechaza, pero vaciando antes el cuerpo de la petición.
 
         Con conexión persistente, responder sin leer lo que el cliente ya está
@@ -518,8 +682,7 @@ class Manejador(BaseHTTPRequestHandler):
             self._leer_cuerpo()
         except OSError:
             pass
-        self._responder(403, "Falta la clave de esta sesión. Vuelve a leer el "
-                             "código QR de la pantalla.".encode("utf-8"),
+        self._responder(403, texto.encode("utf-8"),
                         extra={"Connection": "close"})
         self.close_connection = True
 
@@ -555,6 +718,7 @@ class Manejador(BaseHTTPRequestHandler):
             # desde la red no se le dice, aunque ya haya entrado con ella.
             if self._es_local():
                 datos["clave"] = CLAVE
+                datos["claveLectura"] = CLAVE_LECTURA
             self._json(datos)
             return
 
@@ -563,6 +727,11 @@ class Manejador(BaseHTTPRequestHandler):
             texto = parse_qs(urlparse(self.path).query).get("d", [""])[0]
             if not texto:
                 self._responder(400, b"falta el parametro d")
+                return
+            # el codificador corre en Python puro y está abierto sin clave:
+            # sin tope es tiempo de procesador gratis para cualquiera del wifi
+            if len(texto) > 512:
+                self._responder(400, b"texto demasiado largo")
                 return
             try:
                 self._responder(200, qr_png(texto), "image/png",
@@ -617,6 +786,15 @@ class Manejador(BaseHTTPRequestHandler):
 
         if ruta.startswith("/cuadernos/"):
             nombre = os.path.basename(unquote(ruta[len("/cuadernos/"):]))
+            # Solo cuadernos, y nada que empiece por punto. La clave de la
+            # sesión vive en `.clave`, dentro de esta misma carpeta, y sin este
+            # filtro cualquiera con el enlace del día podía pedirla y leerla en
+            # claro. Como la clave no rota entre arranques, eso le daba acceso
+            # permanente a todas las clases siguientes. La escritura ya exigía
+            # `.json`; la lectura se había quedado sin la misma comprobación.
+            if not nombre.endswith(".json") or nombre.startswith("."):
+                self._json({"error": "no existe"}, 404)
+                return
             ruta_f = os.path.join(CUADERNOS, nombre)
             if not os.path.exists(ruta_f):
                 self._json({"error": "no existe"}, 404)
@@ -629,11 +807,22 @@ class Manejador(BaseHTTPRequestHandler):
 
     # ---------- flujo de eventos ----------
     def _eventos(self):
+        """Canal de eventos. Además apunta el papel de quien se conecta.
+
+        El servidor es el único que sabe con certeza quién sigue conectado. Sin
+        eso, cuando la proyección perdía la red se quedaba congelada delante
+        del grupo y el profesor no tenía forma de enterarse: el aviso de enlace
+        caído solo reacciona al error del canal propio, y en la proyección está
+        oculto a propósito, porque es lo que ve la clase.
+        """
+        from urllib.parse import parse_qs
+        rol = (parse_qs(urlparse(self.path).query).get("rol", [""])[0] or "?")[:20]
         with _candado:
             _siguiente_id[0] += 1
             cid = _siguiente_id[0]
             q = queue.Queue(maxsize=800)
             _clientes[cid] = q
+            _papeles[cid] = rol
 
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream; charset=utf-8")
@@ -650,30 +839,49 @@ class Manejador(BaseHTTPRequestHandler):
             if _ultimo_estado[0]:
                 self.wfile.write(f"data: {_ultimo_estado[0]}\n\n".encode("utf-8"))
                 self.wfile.flush()
+            anunciar_quienes()
             while True:
                 try:
                     dato = q.get(timeout=15)
                     self.wfile.write(f"data: {dato}\n\n".encode("utf-8"))
                 except queue.Empty:
-                    self.wfile.write(b": latido\n\n")  # mantiene viva la conexión
+                    # Latido como mensaje y no como comentario. Un comentario
+                    # de SSE mantiene viva la conexión pero el navegador no lo
+                    # entrega a la aplicación, así que el cliente no tenía
+                    # forma de distinguir «no ha pasado nada» de «se cayó el
+                    # wifi». Cuando la red se va, la conexión no da error: se
+                    # queda colgada, y sin este latido nadie se entera.
+                    self.wfile.write(b'data: {"t":"latido"}\n\n')
                 self.wfile.flush()
         except (BrokenPipeError, ConnectionResetError, OSError):
             pass
         finally:
             with _candado:
                 _clientes.pop(cid, None)
+                _papeles.pop(cid, None)
+            anunciar_quienes()
 
     # ---------- POST / PUT ----------
+    NO_ESCRIBEN = ("Esta clave solo sirve para mirar la clase. Escribir en el "
+                   "pizarrón es del profesor.")
+
     def do_POST(self):
-        if not self._autorizado():
-            self._rechazar(); return
+        # escritura: solo con la clave de control, nunca con la del grupo
+        if not self._autorizado(escribir=True):
+            self._rechazar(self.NO_ESCRIBEN); return
         ruta = urlparse(self.path).path
 
         if ruta == "/empujar":
             try:
-                mensaje = json.loads(self._leer_cuerpo() or b"{}")
+                crudo = self._cuerpo_o_error()
+                if crudo is None:
+                    return
+                mensaje = json.loads(crudo or b"{}")
             except json.JSONDecodeError:
                 self._json({"error": "json inválido"}, 400)
+                return
+            if not isinstance(mensaje, dict):
+                self._json({"error": "se esperaba un objeto"}, 400)
                 return
             origen = mensaje.get("de")
             difundir(mensaje, excepto=origen)
@@ -690,10 +898,17 @@ class Manejador(BaseHTTPRequestHandler):
                 return
             os.makedirs(FONDOS, exist_ok=True)
             destino = os.path.join(FONDOS, nombre)
+            # Vaciar el cuerpo aunque el fondo ya esté: con conexión
+            # persistente, responder sin leer lo que el cliente está enviando
+            # deja esos bytes en el canal y la petición siguiente se lee a
+            # mitad de este cuerpo. Es el mismo defecto que `_rechazar`
+            # documenta y arregla en la ruta gemela.
+            cuerpo = self._cuerpo_o_error()
+            if cuerpo is None:
+                return
             if os.path.exists(destino):        # se manda una vez y ya está
                 self._json({"ok": True, "ya": True})
                 return
-            cuerpo = self._leer_cuerpo()
             tmp = destino + ".tmp"
             with open(tmp, "wb") as f:
                 f.write(cuerpo)
@@ -706,7 +921,9 @@ class Manejador(BaseHTTPRequestHandler):
             if not nombre.endswith(".json"):
                 nombre += ".json"
             os.makedirs(CUADERNOS, exist_ok=True)
-            cuerpo = self._leer_cuerpo()
+            cuerpo = self._cuerpo_o_error()
+            if cuerpo is None:
+                return
             tmp = os.path.join(CUADERNOS, nombre + ".tmp")
             with open(tmp, "wb") as f:
                 f.write(cuerpo)
@@ -720,11 +937,20 @@ class Manejador(BaseHTTPRequestHandler):
 
     # ---------- DELETE ----------
     def do_DELETE(self):
-        if not self._autorizado():
-            self._rechazar(); return
+        if not self._autorizado(escribir=True):
+            self._rechazar(self.NO_ESCRIBEN); return
         ruta = urlparse(self.path).path
         if ruta.startswith("/cuadernos/"):
             nombre = os.path.basename(unquote(ruta[len("/cuadernos/"):]))
+            # El mismo filtro que la lectura, que aquí faltaba: sin él,
+            # `DELETE /cuadernos/.clave` borraba el archivo de la clave y al
+            # siguiente arranque se generaba otra, dejando sin servir el ícono
+            # de la pantalla de inicio de todos los aparatos enlazados. Y
+            # `DELETE /cuadernos/fondos` intentaba borrar un directorio, o sea
+            # 500 con traza.
+            if not nombre.endswith(".json") or nombre.startswith("."):
+                self._json({"error": "no existe"}, 404)
+                return
             ruta_f = os.path.join(CUADERNOS, nombre)
             if os.path.exists(ruta_f):
                 os.remove(ruta_f)
@@ -743,6 +969,46 @@ class Manejador(BaseHTTPRequestHandler):
         self.end_headers()
 
 
+class ServidorAcotado(ThreadingHTTPServer):
+    """`ThreadingHTTPServer` con tope de conexiones simultáneas.
+
+    El de serie lanza un hilo por conexión en el momento de aceptarla, antes
+    de leer un byte y antes de comprobar la clave. Una conexión que se abre y
+    no manda nada deja ese hilo bloqueado para siempre, porque el manejador
+    hereda `timeout = None`. Con unos miles de sockets a medio abrir, y sin
+    necesidad de clave, cualquiera en el wifi del salón deja al servidor sin
+    aceptar al iPad del profesor a media explicación.
+
+    Sesenta y cuatro conexiones sobran para un aula: el iPad, la proyección y
+    un aparato por alumno.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._sitio = threading.BoundedSemaphore(MAX_CONEXIONES)
+        super().__init__(*args, **kwargs)
+
+    def process_request(self, request, client_address):
+        if not self._sitio.acquire(blocking=False):
+            # Sin sitio se cierra de inmediato en vez de encolar: encolar es
+            # lo que convierte el agotamiento en una caída silenciosa.
+            try:
+                request.close()
+            except OSError:
+                pass
+            return
+        try:
+            super().process_request(request, client_address)
+        except BaseException:
+            self._sitio.release()
+            raise
+
+    def shutdown_request(self, request):
+        try:
+            super().shutdown_request(request)
+        finally:
+            self._sitio.release()
+
+
 def main():
     if not os.path.exists(HTML):
         print("  Aviso: no encuentro pizarron.html junto a este archivo.")
@@ -750,7 +1016,7 @@ def main():
     os.makedirs(CUADERNOS, exist_ok=True)
     os.makedirs(FONDOS, exist_ok=True)
 
-    servidor = ThreadingHTTPServer(("0.0.0.0", PUERTO), Manejador)
+    servidor = ServidorAcotado(("0.0.0.0", PUERTO), Manejador)
     servidor.daemon_threads = True
 
     ips = ips_locales()
@@ -764,14 +1030,22 @@ def main():
     anfitrion = socket.gethostname()
     if not anfitrion.endswith(".local"):
         anfitrion += ".local"
-    k = f"&k={CLAVE}" if CLAVE else ""
+    # La clave no se escribe cuando la salida va a un archivo. El paquete de
+    # macOS manda esto a ~/Library/Logs/pizarron.log, que entra en Time
+    # Machine y en cualquier respaldo, y como la clave es estable ese registro
+    # es una copia permanente de la credencial.
+    a_terminal = sys.stdout.isatty()
+    k = f"&k={CLAVE}" if (CLAVE and a_terminal) else ""
     print(f"      http://{anfitrion}:{PUERTO}/?rol=control{k}      <- la estable")
     for ip in ips:
         print(f"      http://{ip}:{PUERTO}/?rol=control{k}")
-    if CLAVE:
-        print(f"\n  Clave de esta sesión: {CLAVE}")
-        print("  Va dentro del código QR, así que leyéndolo no hay que teclearla.")
-        print("  Sin ella, nadie más en esta red puede leer ni tocar tus clases.")
+    if CLAVE and a_terminal:
+        print(f"\n  Clave de control: {CLAVE}")
+        print(f"  Clave del grupo:  {CLAVE_LECTURA}   (solo deja mirar)")
+        print("  Van dentro del código QR, así que leyéndolo no hay que teclearlas.")
+    elif CLAVE:
+        print("\n  Esta sesión pide clave. Está en la pantalla de proyección,")
+        print("  dentro del código QR de emparejamiento.")
     print("\n  Usa la que termina en .local para el ícono de la pantalla de")
     print("  inicio: sirve en cualquier red, aunque la IP cambie.")
     print(f"\n  Cuadernos: {CUADERNOS}")

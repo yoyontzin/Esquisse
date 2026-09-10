@@ -4,6 +4,7 @@
    Aquí se compara, tras cada operación, lo que se ve con la caché contra lo
    que se vería rasterizando de cero. Tienen que salir idénticos. */
 import { chromium } from 'playwright';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -11,11 +12,14 @@ const nav=await chromium.launch();
 const c=await (await nav.newContext({viewport:{width:1280,height:820}})).newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
-await c.selectOption('#paper','gis');
-await c.selectOption('#guide','cuadros');
+await elegir(c, 'paper', 'gis');
+await elegir(c, 'guide', 'cuadros');
 await c.waitForTimeout(1000);
 
-// idéntico = lo que se ve ahora coincide con un redibujado desde cero
+/* La costura con el interior del programa, a propósito en un solo sitio.
+   Las dieciséis comprobaciones de abajo pasan todas por aquí, así que un
+   rediseño de la caché toca cuatro líneas y no dieciséis. Lo que se compara
+   es lo que se ve ahora contra un redibujado desde cero. */
 const coincide = async () => c.evaluate(()=>{
   const conCache = board.toDataURL();
   olvidarTinta(); drawBoard();
@@ -65,7 +69,7 @@ check('tras mover elementos', await coincide());
 await c.evaluate(()=>{ sel=[3]; selDelete(); }); await c.waitForTimeout(400);
 check('tras borrar de en medio', await coincide());
 
-await c.click('#undoRafaga'); await c.waitForTimeout(500);
+await tocar(c, 'undoRafaga'); await c.waitForTimeout(500);
 check('tras borrar lo último', await coincide());
 
 // zoom y desplazamiento
@@ -73,19 +77,55 @@ await c.evaluate(()=>{ const cam=camB(); cam.s*=1.6; cam.x+=120; limitarCam(); d
 await c.waitForTimeout(300);
 check('tras acercar y desplazar', await coincide());
 
-await c.click('#fit'); await c.waitForTimeout(400);
+await tocar(c, 'fit'); await c.waitForTimeout(400);
 check('tras encuadrar', await coincide());
 
 // otra página y vuelta
-await c.click('#pAdd'); await c.waitForTimeout(500);
+await tocar(c, 'pAdd'); await c.waitForTimeout(500);
 await trazo(200, 220, 500, 420); await c.waitForTimeout(300);
 check('en la página nueva', await coincide());
 await c.click('#pPrev'); await c.waitForTimeout(600);
 check('al volver a la página anterior', await coincide());
 
 // cambio de papel
-await c.selectOption('#paper','vintage'); await c.waitForTimeout(900);
+await elegir(c, 'paper', 'vintage'); await c.waitForTimeout(900);
 check('tras cambiar el papel', await coincide());
+
+/* ===== la misma garantía, dicha sin nombrar la caché =====
+   La comprobación de arriba llama a `olvidarTinta()` y depende de que la
+   caché se pueda invalidar de golpe. Si la versión 2 la cambia a capas por
+   rango o a un prefijo revelado, esa forma deja de compilar y se pierde el
+   invariante justo mientras se toca. Esto dice lo mismo en términos de lo que
+   el profesor ve: el pizarrón tiene que enseñar exactamente lo que enseñaría
+   si acabaras de abrir ese cuaderno. Una segunda pestaña, el mismo cuaderno,
+   la misma cámara, los mismos píxeles. */
+{
+  const estado = await c.evaluate(()=>({
+    nb: JSON.parse(JSON.stringify(state.nb)), pi: state.pi,
+    cam: {...pg().camBoard}, w: board.width, h: board.height,
+    visto: board.toDataURL(),
+  }));
+  const c2 = await (await nav.newContext({viewport:{width:1280,height:820}})).newPage();
+  await c2.goto(BASE+'/?rol=control'); await c2.waitForTimeout(2500);
+  const recien = await c2.evaluate(async (e)=>{
+    state.nb = migrate(e.nb); state.pi = e.pi;
+    olvidarHistorial(); olvidarTinta();
+    Object.assign(pg().camBoard, e.cam);
+    fitAll(); drawBoard();
+    // las imágenes y las fórmulas tardan en decodificar
+    await new Promise(r=>setTimeout(r, 1200));
+    olvidarTinta(); drawBoard();
+    const b = document.getElementById('board');
+    return {img: b.toDataURL(), w: b.width, h: b.height};
+  }, estado);
+  check('el lienzo mide lo mismo en las dos pestañas',
+        recien.w === estado.w && recien.h === estado.h,
+        `${estado.w}x${estado.h} vs ${recien.w}x${recien.h}`);
+  check('lo que se ve es lo que se vería recién abierto el cuaderno',
+        recien.img === estado.visto,
+        recien.img === estado.visto ? '' : 'los píxeles no coinciden');
+  await c2.close();
+}
 
 console.log('=== BIEN ==='); ok.forEach(x=>console.log('  ok    '+x));
 if(mal.length){console.log('=== MAL ==='); mal.forEach(x=>console.log('  FALLA '+x));}

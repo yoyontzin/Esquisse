@@ -3,6 +3,8 @@
    entera, hay que comprobar que los dos lados terminan igual también cuando
    se edita: borrar, deshacer, mover con el lazo, cambiar de papel. */
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -16,6 +18,7 @@ await proy.goto(BASE+'/?rol=proyeccion'); await proy.waitForTimeout(2200);
 const ctrl = await (await nav.newContext({viewport:{width:1180,height:820}})).newPage();
 ctrl.on('pageerror',e=>errs.push('ctrl: '+e.message));
 await ctrl.goto(BASE+'/?rol=control'); await ctrl.waitForTimeout(2200);
+await revisar(ctrl);
 
 const b = await ctrl.locator('#board').boundingBox();
 async function trazo(x0,y0,x1,y1){
@@ -49,12 +52,12 @@ A=await lado(ctrl); B=await lado(proy);
 check('se puede seguir escribiendo tras editar', iguales(A,B) && A.n===12, JSON.stringify({ctrl:A,proy:B}));
 
 // 4. borrar lo último: quita varios de golpe
-await ctrl.click('#undoRafaga'); await ctrl.waitForTimeout(1300);
+await tocar(ctrl, 'undoRafaga'); await ctrl.waitForTimeout(1300);
 A=await lado(ctrl); B=await lado(proy);
 check('borrar lo último se propaga', iguales(A,B), JSON.stringify({ctrl:A,proy:B}));
 
 // 5. cambiar el papel
-await ctrl.selectOption('#paper','gis'); await ctrl.waitForTimeout(1300);
+await elegir(ctrl, 'paper', 'gis'); await ctrl.waitForTimeout(1300);
 A=await lado(ctrl); B=await lado(proy);
 check('el cambio de papel se propaga', B.paper==='gis' && iguales(A,B), JSON.stringify({ctrl:A,proy:B}));
 

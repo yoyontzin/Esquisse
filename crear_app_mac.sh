@@ -120,7 +120,10 @@ tabla = [(16, "icon_16x16"),     (32, "icon_16x16@2x"),
 hecho = {}
 for lado, nombre in tabla:
     if lado not in hecho:
-        hecho[lado] = srv.icono_png(lado)
+        # El de macOS, no el del navegador: lleva margen, esquinas continuas y
+        # canal alfa. El del navegador sangra a propósito porque allí lo
+        # recorta el sistema.
+        hecho[lado] = srv.icono_mac_png(lado)
     open(os.path.join(iconset, nombre + ".png"), "wb").write(hecho[lado])
 PYICONO
   if ! iconutil -c icns "$TMP/pizarron.iconset" -o "$APP/Contents/Resources/pizarron.icns"; then

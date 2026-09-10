@@ -48,7 +48,7 @@ Los dos aparatos hablan **directo por la red local**. No pasa por internet, no
 hay cuenta que crear, y los alumnos no instalan nada. Funciona igual con el
 wifi del salón que con el punto de acceso de un teléfono.
 
-Nació como sustituto de Doceri, retirado en 2022, y se usa desde entonces en un
+Nació como sustituto de Doceri, retirado en agosto de 2022, y se usa desde entonces en un
 curso de posgrado en teoría de esquemas.
 
 ---
@@ -115,6 +115,53 @@ El enlace para los alumnos está en el panel lateral del control, en **Para la
 clase**. Cada quien lo abre en su tableta y se acerca a lo que quiera sin
 mover nada a nadie.
 
+### Compartir en Zoom o Meet
+
+La ventana de **proyección** es la que se comparte, y enseña el pizarrón y nada
+más. Ninguna barra, ningún control.
+
+En la computadora se abre sola al arrancar la aplicación. Si la cerraste, el
+botón **Proyección** del control la vuelve a abrir.
+
+Antes de compartir, pulsa **Pantalla completa** en esa ventana, abajo a la
+derecha, o la tecla `F`. Sin eso el público ve además las pestañas y la barra de
+direcciones del navegador. Los dos botones se atenúan solos a los tres segundos
+para no salir en la grabación, y vuelven en cuanto muevas el ratón.
+
+Y lo que hace que esto funcione: **tu zoom en la tableta no mueve la
+proyección**. Puedes acercarte para escribir cómodo, o alejarte para ver dónde
+vas, sin que la clase note nada. Son dos cámaras independientes sobre el mismo
+pizarrón. Lo mismo con las guías: puedes tener cuadrícula solo de tu lado.
+
+### Los tres modos
+
+Preparar una clase y darla son dos cosas distintas, y el programa arranca en la
+que más se usa.
+
+**Escribir** es el modo de fábrica: el pizarrón, la barra de herramientas, y
+una tira delgada que te dice por dónde vas. En un iPad el sitio para escribir
+pasa de media pantalla a tres cuartos.
+
+**Revisar** devuelve la cinta de trazos entera y la columna de la derecha. Es
+donde marcas los stops, reordenas páginas y compruebas el encuadre de la
+proyección. Se abre con la tecla `R`, desde **Vista › Revisar**, o tocando
+**Cinta** en la tira.
+
+**Clase** es el dock de abajo y nada más, para dar la clase.
+
+El modo se recuerda para la próxima vez.
+
+### Dónde está cada cosa
+
+La barra de arriba tiene lo que se usa a cada minuto: colores, grosor,
+herramientas, páginas y deshacer. Al final hay **cinco menús** —Archivo,
+Página, Fondo, Insertar y Vista— con todo lo demás. Tócalos una vez para
+abrirlos y otra para cerrarlos; también se cierran solos al tomar una
+herramienta o al empezar a escribir.
+
+En **Vista › Columna** puedes quitar la columna de la derecha por separado,
+aunque en el modo Escribir ya está quitada.
+
 ### Escribir
 
 Pluma, marcador, gis y goma, con su grosor propio cada uno. La paleta trae
@@ -123,6 +170,25 @@ negro, blanco, rojo, naranja, verde y azul.
 Con la pluma apoyada, **la palma no escribe**. Los dos dedos mueven y acercan.
 
 **Mejorar el trazo** suaviza la letra sin quitarle la mano.
+
+### Señalar
+
+El **puntero** —el botón de la mira, o la tecla `P`— señala sin escribir nada:
+lo que marcas se borra solo y el documento no se entera.
+
+Al tomarlo salen sus opciones:
+
+- **Forma**: punto de láser, flecha o mano que señala. El punto sirve para un
+  renglón, la flecha para un vértice, la mano para que se vea desde el fondo
+  del salón.
+- **Color**: rojo, ámbar, verde, cian, violeta o blanco. Sobre una figura llena
+  de rectas rojas, un puntero rojo se pierde.
+- **Se queda**: de 1 a 20 segundos, lo que tarda en borrarse lo que señalas.
+  Con el tiempo largo puedes escribir una cuenta entera encima del pizarrón,
+  dejarla mientras la explicas, y que se vaya sola sin tocar la clase.
+
+La tableta y la computadora enseñan lo mismo: la forma y el color viajan con la
+señal.
 
 ### La lupa
 

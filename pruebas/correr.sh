@@ -42,11 +42,17 @@ for f in "${archivos[@]}"; do
   salida=$(node "$f" 2>&1); codigo=$?
   linea=$(printf '%s\n' "$salida" | tail -1)
   echo "$f: $linea"
-  # Falla si node se cayó, o si el resumen dice que hubo comprobaciones malas.
-  # Las que no llevan resumen (imprimen «OK» y ya) valen con el código.
+  # Falla si node se cayó, si el resumen dice que hubo comprobaciones malas,
+  # o si NO HAY resumen. Esto último no es celo: cinco pruebas imprimían su
+  # veredicto en texto y salían con código cero pasara lo que pasara, así que
+  # `prueba_persistencia.mjs` podía escribir «SE PIERDE EL TRABAJO» y esto
+  # decía «todo en verde». Una prueba que no puede fallar no es una prueba.
   mal=0
   [ $codigo -ne 0 ] && mal=1
-  case "$salida" in *" fallidas"*) case "$linea" in *" 0 fallidas"*) ;; *) mal=1;; esac;; esac
+  case "$salida" in
+    *" fallidas"*) case "$linea" in *" 0 fallidas"*) ;; *) mal=1;; esac;;
+    *) echo "     ^ sin línea de resumen: esta prueba no puede fallar"; mal=1;;
+  esac
   [ $mal -eq 1 ] && fallos=$((fallos+1))
 done
 echo "---"

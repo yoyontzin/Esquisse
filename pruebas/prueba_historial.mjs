@@ -2,6 +2,8 @@
    Lo que se comprueba es lo que antes no tenía vuelta: borrar con el lazo,
    mover, recolorear, borrar de golpe. */
 import { chromium } from 'playwright';
+import { revisar } from './modo.mjs';
+import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -9,6 +11,7 @@ const nav=await chromium.launch();
 const c=await (await nav.newContext({viewport:{width:1280,height:860}})).newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
+await revisar(c);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarHistorial(); olvidarTinta(); sync(); });
 
 const b=await c.locator('#board').boundingBox();
@@ -63,7 +66,7 @@ check('se puede deshacer un recoloreado', await color0() === antesColor,
 
 // borrar lo último de golpe
 const antesRafaga = await n();
-await c.click('#undoRafaga'); await c.waitForTimeout(500);
+await tocar(c, 'undoRafaga'); await c.waitForTimeout(500);
 const trasRafaga = await n();
 await c.click('#undo'); await c.waitForTimeout(500);
 check('se puede deshacer «borrar lo último»', await n()===antesRafaga,

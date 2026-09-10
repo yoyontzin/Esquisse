@@ -7,6 +7,16 @@ Documento de traspaso. Si abres este proyecto en Claude Code, lee esto primero.
 Sustituto de Doceri (retirado en agosto de 2022) para dar clases de matemáticas:
 se escribe en el iPad y se proyecta desde la Mac, con revelado por pasos.
 
+La fecha del retiro sale del propio fabricante y no de terceros, porque acaba
+impresa en un depósito con DOI y ahí ya no se corrige. `doceri.com` hoy no
+responde; la última copia archivada que sí carga, la del 20 de septiembre de
+2024, dice entera: «We regret to inform you that Doceri was retired in August
+2022 is no longer supported». Está en
+`https://web.archive.org/web/20240920134854/http://doceri.com/`. Las copias de
+2022 todavía enseñan la página comercial completa, así que el aviso se puso
+entre diciembre de 2022 y 2024, pero la fecha que da la empresa es agosto de
+2022.
+
 Autor del uso: J. Rogelio Pérez-Buendía, CIMAT Mérida. Curso en marcha:
 Geometría Algebraica IV, Teoría de Esquemas, en línea por Google Meet.
 
@@ -200,6 +210,28 @@ cuando se querría cambiar de color.
 El dock de modo clase lleva goma, deshacer, rehacer, puntero y los ocho
 colores: dando clase no hay barra a la que ir.
 
+### El puntero
+
+Señalar tiene tres formas —punto de láser, flecha y mano— y seis colores, y se
+elige al tomar el puntero, en `#opcPuntero`. Cada forma sirve para algo
+distinto: el punto para un renglón, la flecha para un vértice, la mano para
+que se vea desde el fondo del salón. El color importa porque sobre una figura
+llena de rectas el rojo se pierde.
+
+La flecha y la mano van como camino de SVG compilado a `Path2D`, y se colocan
+**por la punta**, no centradas: centradas señalarían un centímetro más abajo
+de lo que uno cree, que a tamaño de pizarrón es media línea.
+
+`ui.ptrVida` es lo que tarda en borrarse lo señalado, de 1 a 20 segundos. La
+cabeza se va antes que la estela, a un tercio: si el punto se quedara tanto
+como lo escrito, al bajar la mano seguiría marcando un sitio que ya no
+interesa. Con los 9 segundos de fábrica sale exactamente lo que había antes de
+que esto fuera regulable.
+
+El estilo viaja con la señal —`{t:'ptr', x, y, c, f, v}`—. Sin eso la clase
+vería un punto rojo mientras el profesor cree estar señalando con una mano
+verde.
+
 ## Dónde viven los cuadernos
 
 En `~/Documents/Pizarrón`, **fuera** del paquete de macOS. Vivían dentro, en
@@ -348,6 +380,221 @@ un día sí y otro no.
 paquetes de esa red puede leer la clase. Para dar clase es suficiente, y es el
 mismo modelo de una impresora compartida; no lo es para exponer esto a internet.
 
+## La proyección como ventana compartible
+
+La vista de proyección ya escondía toda la interfaz, pero le faltaba lo que la
+hace de verdad compartible en Zoom o Meet: **pantalla completa**, porque sin
+ella el público ve las pestañas y la barra de direcciones del navegador. El
+botón está abajo a la derecha, junto al de enlazar, y responde también a `F`.
+
+Los dos botones se atenúan a los tres segundos de inactividad, y **siguen
+respondiendo mientras están atenuados**. Con `pointer-events:none` quedaban
+invisibles y muertos: había que mover el ratón, esperar a que reaparecieran y
+entonces pulsar. Así el mismo clic que los despierta también les llega.
+
+El modo existía desde el principio y el usuario no sabía que lo tenía. Eso es
+un problema de descubrimiento, no de funcionalidad, y por eso el panel lateral
+del control ahora dice en una línea qué abrir y qué compartir.
+
+## Los tres modos
+
+Preparar una clase y darla son dos actividades distintas y necesitan cosas
+distintas. Hasta la versión 1 había dos estados: todo a la vista, o modo clase.
+
+| Modo | Qué se ve | Para qué |
+|---|---|---|
+| **Escribir** (de fábrica) | Pizarrón, barra, y una tira de 18 px que dice por dónde vas | Escribir la clase |
+| **Revisar** | Añade la cinta entera y la columna lateral | Marcar stops, reordenar páginas, comprobar el encuadre |
+| **Clase** | El dock y nada más | Dar la clase |
+
+Se cambia con la tecla `R`, con «Vista › Revisar», o tocando el asa «Cinta» de
+la tira. El modo se recuerda entre sesiones.
+
+Lo que devuelve, medido con emulación táctil, que es lo que dispara la regla de
+44 px de tamaño mínimo de toque:
+
+| | Revisar | Escribir |
+|---|---|---|
+| iPad de 11" | 887×499, 45.7 % | **1128×635, 74 %** |
+| iPad de 12.9" | 1090×613, 47.8 % | **1314×739, 69.4 %** |
+| portátil | 1236×695, 60.1 % | **1460×821, 83.9 %** |
+
+**Hay que quitar la cinta y la columna a la vez o no quitar ninguna**, y esta
+es la parte contraintuitiva. En el iPad de 11 pulgadas el pizarrón está
+limitado por el **alto**, así que quitar los 224 px de ancho de la columna no
+devuelve un solo píxel; y al quitar la cinta pasa a estar limitado por el
+**ancho**, así que tampoco devuelve casi nada. Medido: la columna sola da
++0 %, la cinta sola +4 %, las dos +62 %. En el de 12.9 pulgadas es al revés,
++31 % la columna sola, +0 % la cinta sola, +45 % las dos.
+
+Por eso los menús desplegables, que devolvieron 50 px de alto de barra, no
+agrandaron el pizarrón ni un píxel en ninguno de los dos iPad.
+
+Y el reparto es al revés de lo que parece: los 33 controles de la barra cuestan
+108 px, los 12 de la cinta cuestan 161, y los dos elementos interactivos de la
+columna cuestan 224 de ancho. **El bloque con más controles es el más barato.**
+Lo que sobra no son controles, es superficie permanente dedicada a la
+reproducción y al estado, que son cosas que no ocurren mientras escribes.
+
+Tres detalles del código:
+
+- Al cambiar de modo hay que rehacer los lienzos y reencuadrar, porque la
+  rejilla cambia de tamaño. Sin eso el trazo cae desplazado respecto de donde
+  se apoya la pluma. `prueba_modos.mjs` lo comprueba en los dos modos.
+- El asa lleva `min-height:0` con `body` delante: la regla táctil de 44 px la
+  estiraba hacia arriba, se metía debajo de la barra y la barra se quedaba con
+  el toque. Aquí no aplica porque hay otros dos caminos al mismo sitio.
+- Los stops se marcan en Revisar, con la tecla `S`, o desde el dock en clase.
+  Escribir es para escribir y Revisar para estructurar.
+
+## Toda mutación pasa por `mutar()`
+
+Cada cambio del documento tenía que llamar a mano, y en el orden correcto,
+hasta cuatro funciones de contabilidad. `apuntar()` para el historial,
+`edicion()` para reenviar por red, `olvidarTinta()` para invalidar la caché y
+`touch()` para guardar. Estaban repartidas por unos cincuenta sitios y el
+cuarteto literal copiado nueve veces.
+
+Olvidar una no daba error. Daba una clase congelada, o un deshacer que borraba
+otra página. Es la causa raíz compartida por cuatro de los defectos de la
+auditoría de septiembre.
+
+`mutar(cambio, opciones)` lo hace en el orden bueno y arregla tres cosas de
+paso. El historial va antes de tocar nada. La comprobación de «no hay nada que
+hacer» va antes de apuntar, porque seis funciones apuntaban primero y
+comprobaban después, así que unos toques en vacío empujaban fuera de la pila
+pasos de deshacer buenos. Y ya no se llama `olvidarTinta()` detrás de
+`edicion()`, que lo hacía por su cuenta, cosa que pasaba en doce sitios.
+
+`alFinal:true` es para el trazo nuevo al final, el único caso en que no hace
+falta reenviar la página entera.
+
+## Un solo camino para abrir un cuaderno
+
+Había seis, cada uno con su ritual, y dos consecuencias que se disparaban
+siempre. Importar un archivo no olvidaba el historial, así que un «Deshacer»
+justo después pegaba el contenido del cuaderno anterior encima del recién
+importado. Y ninguno limpiaba las firmas de las miniaturas: al abrir un
+cuaderno de tres páginas teniendo abierto otro de tres, la tira solo se
+reconstruye si cambia el número de páginas, así que las miniaturas 2 y 3
+seguían enseñando el cuaderno viejo hasta visitar cada una.
+
+`abrirCuaderno(nb, pagina)` es ahora el único camino.
+
+## El corte de revelado no entra en el sello de la caché
+
+Esto es lo que hace que revelar la clase sea rápido, y es el cambio de
+rendimiento más grande de la versión 2.
+
+En la versión 1 el sello llevaba el corte, así que moverlo tiraba las cuatro
+capas y re-rasterizaba la página entera. Medido con cuatrocientos trazos:
+
+| | versión 1 | versión 2 |
+|---|---|---|
+| Escribiendo, corte al final | 0.05 ms | 0.04 ms |
+| Cuadro de «escribir hasta el stop» | 20 ms | **5.5 ms** |
+| Sin caché, de referencia | 11.4 ms | 11.4 ms |
+
+Es decir que durante la reproducción la caché **costaba más que no tenerla**,
+porque pagaba la contabilidad y re-rasterizaba igual. Y se disparaba en cuatro
+sitios: «escribir hasta el stop», arrastrar la cinta, saltar entre stops, y
+cada trazo insertado con «Editar aquí».
+
+Ahora hay dos grupos de capas con vidas distintas.
+
+Las de **revelado** guardan `[0, corte)` y crecen por añadido mientras el corte
+avance, que es lo que hace la reproducción. Retroceder sí obliga a rehacerlas,
+y ocurre mucho menos.
+
+Las de **fantasma** guardan `[corte, n)`. Esas sí hay que rehacerlas cuando el
+corte se mueve, porque una capa rasterizada no se puede des-dibujar, y al
+empezar la reproducción son la página entera. Pero el fantasma es una vista
+previa tenue que **solo ve el profesor**: la proyección se dibuja con
+`count = reveal` y sin corte, así que la clase no recibe fantasmas nunca. Por
+eso se rehacen como mucho diez veces por segundo.
+
+Entre una puesta al día y la siguiente, la capa de fantasma lleva de más los
+elementos que se acaban de revelar. Por eso **el orden de composición pone el
+fantasma debajo de lo revelado**: la tinta revelada es opaca y los tapa
+exactamente. Antes era al revés. De paso se lee mejor, porque lo ya revelado
+deja de quedar por debajo de la previsualización de lo que aún no toca.
+
+Al saltar una puesta al día se pide un repintado a los 110 ms, así que en
+cuanto la reproducción para los fantasmas convergen. `prueba_cache.mjs`
+comprueba justamente eso, y además compara contra una segunda pestaña que
+carga el mismo cuaderno desde cero.
+
+## Cuando se cae el wifi, la conexión no da error
+
+Se queda colgada. El `onerror` no llega nunca, así que hasta la versión 1 el
+profesor escribía con el indicador en verde mientras nada salía, y si la que
+caía era la proyección, el grupo miraba una pantalla congelada sin que nadie se
+enterara.
+
+Hay tres detecciones, porque son tres fallos distintos:
+
+- **El latido** del servidor pasó de comentario de SSE, que el navegador no
+  entrega a la aplicación, a mensaje de verdad. Cuarenta segundos sin nada
+  quiere decir canal muerto, y entonces el canal se **reemplaza**, no se marca.
+  Marcarlo sin reabrirlo fue una regresión que la propia prueba cazó: como la
+  conexión colgada nunca da error, el navegador tampoco la reintenta, así que
+  al volver la red no se reenviaba nada.
+- **Tres empujones fallidos seguidos** avisan. Que lo escrito no salga es tan
+  grave como no recibir, y el canal de lectura puede seguir vivo mientras los
+  envíos ya no llegan.
+- **La proyección caída** la detecta el servidor, que es el único que sabe con
+  certeza quién sigue conectado, y avisa por el mensaje `quienes`. El cartel
+  sale en el aparato del profesor y **no** en la proyección, que es lo que ve
+  el grupo.
+
+De paso: la gente dejaba de aparecer en el panel de «quién está» a los 45
+segundos, porque nadie volvía a saludar nunca. Ahora control y proyección
+saludan cada cinco.
+
+## Dos claves, no una
+
+Hasta la versión 1 había una sola para todo, y el enlace que se reparte al
+grupo la llevaba dentro. El rol vivía **solo en el navegador**: para el
+servidor, «alumno» y «control» eran idénticos, y `/empujar` reenviaba cualquier
+objeto JSON a todo el mundo.
+
+Comprobado desde la dirección de red, no desde `localhost`, que es donde el
+servidor deja pasar sin clave:
+
+```
+POST /empujar {"t":"page","page":{"items":[]}}   -> 200
+proyección antes:   6 trazos
+proyección después: 0 trazos
+alumno que llega tarde: 0 trazos
+```
+
+Cualquier alumno con las herramientas de desarrollo abiertas podía borrar la
+clase, escribir en ella o suplantar a otro, y el servidor guardaba el mensaje
+envenenado como último estado, de modo que se lo servía también a quien llegara
+después.
+
+Ahora la clave de control vale para todo y la del grupo solo para mirar. La de
+control sigue siendo estable porque el ícono de la pantalla de inicio del iPad
+la lleva y cambiarla cada arranque obligaría a reemparejar cada mañana.
+
+Y con ella: el filtro que le faltaba al borrado, sin el cual `DELETE
+/cuadernos/.clave` borraba el archivo de la clave; tope de 48 MB en el cuerpo
+con la cabecera validada, porque un `Content-Length` no numérico daba 500 con
+traza y uno negativo hacía leer hasta que el cliente cerrara; y `timeout` de
+20 s más tope de 64 conexiones, sin lo cual cualquiera tumbaba el servidor
+abriendo sockets mudos, **sin necesidad de clave**, porque el hilo se consume
+al aceptar la conexión y antes de comprobar nada.
+
+## El arranque no puede morir a mitad
+
+`boot()` no tenía `try`. Un `index` que no fuera arreglo revienta en `.sort`, y
+un cuaderno con un elemento nulo revienta en `fixItem`. Cuando eso pasaba se
+llevaba por delante `conectar()`, `fitAll()` y `sync()`: la aplicación abría,
+se veía completamente normal, los botones estaban, y el iPad no enlazaba nunca.
+
+Lo importante no es recuperar el cuaderno roto. Es que `conectar()` corra
+siempre.
+
 ## Trampas conocidas
 
 - **El trabajador de servicio solo debe tocar su propio origen.** Cuando
@@ -405,6 +652,23 @@ mismo modelo de una impresora compartida; no lo es para exponer esto a internet.
     ./correr.sh                  # todas
     ./correr.sh prueba_pdf.mjs   # una
 
+**Una prueba que no puede fallar no es una prueba.** Cinco archivos no tenían
+ni una sola aserción: imprimían su veredicto en texto y salían con código cero
+pasara lo que pasara. `prueba_persistencia.mjs` podía escribir «SE PIERDE EL
+TRABAJO» y el corredor decía «todo en verde», y como solo se muestra la última
+línea, ese veredicto ni se veía. Era el 12 % del contrato, y justo la parte que
+vigila la pregunta más cara. Ahora `correr.sh` falla si una prueba no imprime
+línea de resumen, y esa regla cazó dos pruebas nuevas el mismo día en que se
+escribió.
+
+**Las bibliotecas de fuera se sirven de disco.** `primeLibs` baja jsPDF,
+MathJax y pdf.js de un CDN en cada arranque de página, y como cada archivo abre
+un navegador con perfil nuevo, se bajaban cuarenta veces por corrida. Seis
+pruebas dependen de que lleguen, y era la causa del fallo intermitente de
+`prueba_exportar_fondos.mjs`: sola pasaba, dentro de la suite y con la máquina
+cargada, no. `libs.mjs` las guarda en `_bibliotecas/`, que no va al
+repositorio, y las siembra en el almacén local antes de abrir la página.
+
 `correr.sh` levanta un servidor de pruebas en el 8778 con carpeta de cuadernos
 propia y **lo reinicia entre cada prueba**. Las dos cosas hacen falta: el
 servidor recuerda en memoria el último estado que le mandaron y se lo reenvía
@@ -433,12 +697,51 @@ solo aparecieron viendo las imágenes, no en las aserciones.
 
 ## La barra
 
-Dos filas. La de arriba, `#barTools`, tiene lo que se usa a cada minuto y
-**nunca se desplaza**: cuando era una sola fila con scroll, tomar el marcador
-empujaba la pluma fuera de la pantalla y había que ir a buscarla a media
-clase. La de abajo, `#barDoc`, sí se desplaza, porque son controles de
-documento que se tocan de vez en cuando. Si algún día hay que meter otro
-botón, va en la segunda fila.
+Una fila, `#barTools`, con lo que se usa a cada minuto, y **nunca se
+desplaza**: cuando llevaba scroll, tomar el marcador empujaba la pluma fuera
+de la pantalla y había que ir a buscarla a media clase.
+
+Hubo una segunda fila, `#barDoc`, con los 35 controles de documento. Medía
+2314 px de ancho y en un iPad se veían 1158: la otra mitad había que ir a
+buscarla rodando la barra con el dedo, justo en el borde donde se apoya la
+palma al escribir. Ahora esos 35 viven detrás de cinco menús —Archivo,
+Página, Fondo, Insertar, Vista— al final de la fila de herramientas, y la
+segunda fila desapareció.
+
+Lo que se ganó, medido a cuatro tamaños:
+
+| pantalla | barra antes | barra ahora | pizarrón antes | pizarrón ahora |
+|---|---|---|---|---|
+| 1180×820 | 98 px | 88 px | 904×509 | 904×509 |
+| 1366×1024 | 98 px | 48 px | 1090×613 | 1090×613 |
+| 1512×945 | 98 px | 48 px | 1152×648 | 1236×695 |
+| 1920×1080 | 98 px | 48 px | 1392×783 | 1481×833 |
+
+En las dos primeras el pizarrón no crece, y conviene saber por qué: ahí está
+limitado por el **ancho**, no por el alto, así que el alto que devuelve la
+barra no va a ninguna parte. Lo que lo limita es `#side`, la columna de la
+derecha, que se lleva 210 px. Por eso **Vista › Columna** la quita: a 1180×820
+el pizarrón pasa de 904×509 a 948×533, **+10 % de área**. No los 210 px
+enteros: al quitarla deja de mandar el ancho y pasa a mandar el alto, así que
+solo aprovecha 44. Se recuerda entre sesiones.
+
+A 1180 px la fila se parte igual en dos alturas —1358 px de controles no caben
+en 1158—, pero ya no hay nada escondido: todo se alcanza de un toque.
+
+Tres detalles del código que no son cosméticos:
+
+- Los menús son **paneles flotantes** como `#opcTrazo` o `#panelFondo` y
+  comparten sitio con ellos, así que abrir uno cierra el resto. Sin eso las
+  opciones de trazo caen encima del menú y no se puede tocar lo de debajo.
+- `.menuDesp` está en `ZONA_INTERFAZ`. Si no, arrastrar sobre el fondo del
+  panel no lo desplaza y el toque se cancela a medias.
+- El panel lleva `width:max-content`. Colocado en el 50 % un elemento absoluto
+  solo dispone de media caja y se partía en cuatro renglones de 302 px, tan
+  alto que tapaba el pizarrón entero.
+
+Los `id` de los 35 controles no cambiaron: se movieron los nodos, no se
+recrearon, así que cada manejador y cada `getElementById` de otro sitio siguen
+encontrando lo suyo.
 
 ## Herramientas de clase
 
@@ -510,3 +813,40 @@ clase sale en el panel del profesor.
   archivo, que podrían irse a un menú.
 - El reconocimiento de escritura a LaTeX quedó descartado a propósito: en clase,
   adivinar mal es peor que un botón más. Hay editor de texto con LaTeX explícito.
+
+## Qué queda por hacer
+
+Lo que la versión 2 dejó pendiente, con lo que costaría y lo que aporta:
+
+**Dar tres clases con ella antes de llamarla 2.0.** Es la única comprobación
+que `correr.sh` no puede hacer, y la más importante. El cambio de modos altera
+dónde vive cada control, y el músculo de la mano está entrenado con la
+distribución anterior.
+
+**Los arrastres de selección y de fondo no están coalescidos por cuadro.** Cada
+`pointermove` invalida la caché entera y repinta las dos vistas, o sea hasta
+120 veces por segundo con el Pencil. El camino del resaltador ya resolvió esto
+veinte líneas más abajo con `liveDirty` y `requestAnimationFrame`. Además
+`refreshSelBar` lee `offsetWidth` entre dos escrituras de posición, que fuerza
+recalcular la disposición en cada evento.
+
+**Dos pestañas de control a la vez.** Si el iPad se recarga sin cerrar la Mac,
+los dos son control. A recibe de B, la cuenta no cuadra, A pide la página
+entera, B la manda, A la descarta por ser control, y vuelve a empezar. Hay que
+decidir primero qué debe pasar: que el segundo pase a solo mirar, o que la
+aplicación lo nombre.
+
+**El almacén local lleno miente.** `store.set` captura el error de cuota y
+devuelve `true` igual, así que la etiqueta de guardado pinta una hora y el
+profesor cree que está a salvo cuando solo está en memoria.
+
+**La barra sigue en dos filas en los dos iPad.** Necesita 1679 px con el
+tamaño táctil de 44 px y hay 1158 o 1344. Bajarla a una fila devuelve 51 px, o
+sea un 4 %, contra el 62 % que devolvió el modo Escribir. Y cuesta quitar
+cuatro tintas de acceso directo, los colores de marcador y el control de
+grosor. Por eso no se hizo: mal cambio por unidad de riesgo.
+
+**La rotación de la clave.** Es estable a propósito, para que el ícono de la
+pantalla de inicio del iPad siga sirviendo. Quien guarde la foto del código QR
+de emparejamiento conserva acceso de control. Falta un «cambiar la clave» que
+regenere `.clave` sin tener que borrarlo a mano.
