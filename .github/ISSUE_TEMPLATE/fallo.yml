@@ -22,7 +22,7 @@ body:
     id: como-repetirlo
     attributes:
       label: Cómo repetirlo
-      description: Los pasos, aunque parezcan obvios. Si no lo has vuelto a ver, dilo también: eso es información.
+      description: "Los pasos, aunque parezcan obvios. Si no lo has vuelto a ver, dilo también, que eso es información."
       placeholder: |
         1. Abrir el pizarrón en el iPad
         2. Escribir dos renglones
