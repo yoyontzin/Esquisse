@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { revisar } from './modo.mjs';
-import { sembrarLibs } from './libs.mjs';
+import { sembrarLibs, sinCDN } from './libs.mjs';
 import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 import fs from 'fs';
@@ -9,6 +9,9 @@ const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
 const ctx=await nav.newContext({viewport:{width:1440,height:900}, acceptDownloads:true});
 await sembrarLibs(ctx, ['jspdf']);
+/* Nada de red: lo sembrado basta, y bajar del CDN lo que la prueba no usa
+   es lo que la volvía intermitente dentro de la corrida completa. */
+await sinCDN(ctx);
 const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto((process.env.BASE||BASE)+'/?rol=control'); await c.waitForTimeout(4000);

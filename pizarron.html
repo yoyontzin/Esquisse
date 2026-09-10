@@ -1,3 +1,38 @@
+<!--
+  ===========================================================================
+  ESQUISSE — pizarrón digital para dar clase de matemáticas
+  ===========================================================================
+
+  Copyright (c) 2026 J. Rogelio Pérez-Buendía. Todos los derechos reservados.
+
+  Autor      J. Rogelio Pérez-Buendía
+  Filiación  Centro de Investigación en Matemáticas, A.C., Unidad Mérida
+  Correo     rogelio.perez@cimat.mx
+  Página     https://www.cimat.mx/~rogelio.perez
+  ORCID      0000-0002-7739-4779
+  DOI        https://doi.org/10.5281/zenodo.22654651
+  Código     https://github.com/yoyontzin/Esquisse
+
+  LICENCIA DE EVALUACIÓN. El texto completo está en LICENCIA.md, junto a este
+  archivo y en el repositorio. En resumen:
+
+    Puedes usarlo para dar tus clases, en tu institución y con tus alumnos,
+    incluso en cursos por los que se cobre matrícula. Puedes leer su código y
+    modificarlo para tu propio uso. Nada de eso necesita permiso ni aviso.
+
+    Necesitan permiso ESCRITO del autor: redistribuirlo en cualquier forma,
+    venderlo o cobrar por él, publicar obras derivadas aunque sean gratuitas,
+    y quitar o cambiar los avisos de autoría, este incluido.
+
+  Registro ante el INDAUTOR en trámite.
+
+  Esta es una copia de evaluación y lo dice en el pizarrón y en el pie de cada
+  hoja exportada. Para una licencia de uso, una evaluación institucional o una
+  copia sin marca, escribe a rogelio.perez@cimat.mx.
+
+  Se entrega tal cual, sin garantía de ninguna clase y sin soporte.
+  ===========================================================================
+-->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -4222,6 +4257,7 @@ async function post(msg){
     await pedir('/empujar', {method:'POST', headers:{'Content-Type':'application/json'},
                              body: JSON.stringify(msg)});
     if (net.fallos){ net.fallos = 0; marcarEnlace(true); }
+    return true;
   }catch{
     /* Que no salga es tan grave como no recibir, y hasta ahora no lo decía
        nadie. El canal de eventos puede seguir vivo mientras los envíos ya no
@@ -4230,14 +4266,38 @@ async function post(msg){
        `net.on`: hay que seguir intentándolo, porque el siguiente empujón es lo
        que recupera la conexión. */
     if (++net.fallos >= 3) marcarEnlace(false);
+    return false;
   }
 }
-function pushPage(){
+/* Reenviar la página es el camino de recuperación entero: lo usa `onopen` al
+   reconectar y lo usa el `pide` del receptor cuando detecta un hueco. Marcaba
+   la página como enviada sin esperar a saber si el envío había salido, y
+   `post` se traga el error. El momento en que ese envío tiene más
+   probabilidad de fallar es justo el que lo dispara, el de la red volviendo.
+
+   Entonces el control se quedaba creyendo que la clase estaba al día: con
+   `net.enviados` puesto al total y `net.sucio` en falso, `pushLite` ya no
+   manda nada, y el indicador sigue en verde. La proyección se quedaba con lo
+   que tuviera hasta que el profesor escribiera otro trazo, porque el receptor
+   ve el hueco y pide reenvío. Si el profesor para a explicar algo, el grupo se
+   queda mirando un pizarrón viejo. */
+let reintentoPagina = null;
+function reintentarPagina(){
+  if (reintentoPagina) return;
+  reintentoPagina = setTimeout(()=>{ reintentoPagina = null; if (net.sucio) pushPage(); }, 1500);
+}
+async function pushPage(){
   if (!net.on || ROLE !== 'control') return;
   const {copia, faltan} = stripAssets(pg());
   faltan.forEach(a => { net.sent.add(a.id); post({t:'asset', id:a.id, src:a.src}); });
-  post({t:'page', page:copia, guideMine:ui.guideMine});
-  net.enviados = pg().items.length;
+  const cuantos = pg().items.length;
+  const salio = await post({t:'page', page:copia, guideMine:ui.guideMine});
+  if (!salio){
+    net.enviados = 0; net.sucio = true;
+    reintentarPagina();
+    return;
+  }
+  net.enviados = cuantos;
   net.sucio = false;
 }
 /* Cualquier cosa que no sea escribir al final —borrar, mover con el lazo,
@@ -4280,7 +4340,7 @@ function mutar(cambio, opc){
   return r;
 }
 
-function pushLite(){
+async function pushLite(){
   if (!net.on || ROLE !== 'control') return;
   const P = pg();
   // firma de todo lo que no son trazos; si cambia, va la página completa
@@ -4295,9 +4355,20 @@ function pushLite(){
   if (P.items.length > net.enviados){
     const nuevos = P.items.slice(net.enviados);
     if (nuevos.some(it => it && it.k === 'i')){ pushPage(); return; }   // trae imagen
-    post({t:'add', desde:net.enviados, items:nuevos,
-          reveal:P.reveal, stops:P.stops, guideMine:ui.guideMine});
-    net.enviados = P.items.length;
+    const desde = net.enviados, hasta = P.items.length;
+    const salio = await post({t:'add', desde, items:nuevos,
+                              reveal:P.reveal, stops:P.stops, guideMine:ui.guideMine});
+    /* Avanzar el contador solo si salió. Antes se avanzaba siempre, y eso es
+       lo que perdía la clase: con el wifi caído cada trazo nuevo daba por
+       entregado lo que no había salido de la tableta, así que al volver la red
+       el control creía estar al día y no reenviaba nada. Lo escrito durante el
+       corte no llegaba nunca, y el indicador estaba en verde.
+
+       Al fallar se marca la página como sucia, para que el siguiente envío
+       vaya entero en vez de añadir desde un índice en el que el receptor no
+       está, y se programa un reintento por si el profesor deja de escribir. */
+    if (!salio){ net.sucio = true; reintentarPagina(); return; }
+    if (net.enviados === desde) net.enviados = hasta;
     return;
   }
   post({t:'lite', reveal:P.reveal, partial:playPartial, stops:P.stops,

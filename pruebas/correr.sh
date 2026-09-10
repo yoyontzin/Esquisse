@@ -53,7 +53,15 @@ for f in "${archivos[@]}"; do
     *" fallidas"*) case "$linea" in *" 0 fallidas"*) ;; *) mal=1;; esac;;
     *) echo "     ^ sin línea de resumen: esta prueba no puede fallar"; mal=1;;
   esac
-  [ $mal -eq 1 ] && fallos=$((fallos+1))
+  if [ $mal -eq 1 ]; then
+    fallos=$((fallos+1))
+    # Sin esto, una prueba que falla dentro de la corrida completa deja una
+    # línea de resumen y nada más, y no hay manera de saber qué comprobación
+    # se cayó. Se enseñan las malas y se guarda la salida entera.
+    printf '%s\n' "$salida" | grep '^  MAL' | sed 's/^/   /'
+    printf '%s\n' "$salida" > "/tmp/pizarron_falla_${f%.mjs}.log"
+    echo "     salida completa en /tmp/pizarron_falla_${f%.mjs}.log"
+  fi
 done
 echo "---"
 if [ "$fallos" -eq 0 ]; then echo "todo en verde"; else echo "$fallos con fallos"; fi

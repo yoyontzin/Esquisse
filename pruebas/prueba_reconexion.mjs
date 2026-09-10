@@ -79,6 +79,36 @@ const firma = pag => pag.evaluate(()=>pg().items.map(i =>
 check('y en el mismo orden', await firma(p) === await firma(c),
       `control: ${(await firma(c)).slice(0,70)}…  proyección: ${(await firma(p)).slice(0,70)}…`);
 
+/* --- el envío de recuperación que no sale ---
+
+   Reenviar la página es el camino de recuperación entero, y lo dispara justo
+   el momento en que más probable es que un envío falle: la red volviendo.
+   `post` se traga el error, así que si ese envío no salía, el control se
+   quedaba creyendo que la clase estaba al día. Indicador en verde, `enviados`
+   puesto al total, y la proyección con lo que tuviera.
+
+   Se reproduce sin depender de ningún tiempo: se corta el envío a propósito,
+   se dispara la recuperación, y se mira si el control se engaña. */
+{
+  await ctxC.route('**/empujar*', r => r.abort());
+  const antes = await cuentaProy();
+  await c.evaluate(()=>{ net.sent.clear(); net.lastSig=''; net.enviados=0; pushPage(); });
+  await c.waitForTimeout(600);
+  const creencia = await c.evaluate(()=>({enviados: net.enviados, sucio: net.sucio,
+                                          hay: pg().items.length}));
+  check('si el reenvío no sale, el control no lo da por enviado',
+        creencia.enviados < creencia.hay || creencia.sucio, JSON.stringify(creencia));
+  await ctxC.unroute('**/empujar*');
+  /* Y se pone al día solo, sin que el profesor tenga que escribir otro trazo.
+     Antes hacía falta uno: el receptor veía el hueco y pedía reenvío. Si el
+     profesor paraba a explicar algo, el grupo miraba un pizarrón viejo. */
+  await p.waitForFunction(n=>pg().items.length >= n, await cuentaCtrl(),
+                          {timeout: 15000, polling: 300}).catch(()=>{});
+  const ahora = await cuentaProy();
+  check('y se pone al día solo, sin escribir nada más',
+        ahora === await cuentaCtrl(), `tenía ${antes}, ahora ${ahora}, el control ${await cuentaCtrl()}`);
+}
+
 check('el aviso de enlace caído desaparece al volver',
       await c.evaluate(()=>{
         const a = document.getElementById('avisoEnlace');
@@ -128,6 +158,34 @@ check('y el aviso de proyección caída se retira',
     return p.waitForFunction(()=>pg().items.length>=14, null, {timeout:20000})
             .then(()=>true).catch(()=>false);
   })());
+}
+
+/* --- escribir mientras no sale nada ---
+
+   Este es el que perdía la clase. Con el wifi caído, cada trazo nuevo avanzaba
+   el contador de entregados aunque el envío no hubiera salido de la tableta.
+   Al volver la red el control se creía al día y no reenviaba nada, así que lo
+   escrito durante el corte no llegaba nunca, con el indicador en verde.
+
+   Se provoca cortando los envíos a propósito, sin tocar la red: así se mide lo
+   que el control CREE, que es donde estaba el fallo, y no depende de tiempos
+   de reconexión. */
+{
+  await ctxC.route('**/empujar*', r => r.abort());
+  const antesDelCorte = await c.evaluate(()=>net.enviados);
+  for (let i=20;i<24;i++) await trazo(i);
+  await c.waitForTimeout(700);
+  const durante = await c.evaluate(()=>({enviados: net.enviados, hay: pg().items.length}));
+  check('con los envíos cortados, no se dan por entregados los trazos nuevos',
+        durante.enviados <= antesDelCorte && durante.hay > durante.enviados,
+        JSON.stringify({antesDelCorte, ...durante}));
+  await ctxC.unroute('**/empujar*');
+  /* Y al volver llegan solos, sin escribir uno más. */
+  await p.waitForFunction(n=>pg().items.length >= n, durante.hay,
+                          {timeout: 15000, polling: 300}).catch(()=>{});
+  check('y al volver los envíos, la clase los recibe sin escribir nada más',
+        await cuentaProy() === durante.hay,
+        `proyección ${await cuentaProy()}, control ${durante.hay}`);
 }
 
 check('sin errores de JavaScript', errs.length===0, [...new Set(errs)].join(' | '));

@@ -2,7 +2,7 @@
    comprueba es que el cuaderno adelgaza y que, aun así, al recargar sigue
    estando todo: el fondo y lo anotado encima. */
 import { chromium } from 'playwright';
-import { sembrarLibs } from './libs.mjs';
+import { sembrarLibs, sinCDN } from './libs.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 /* Vertical a propósito: estas pruebas miran qué pasa al meter una página
    alta en un marco apaisado. Los PDF que exporta la app son 16:9 y encajan
@@ -13,6 +13,9 @@ const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
 const ctx=await nav.newContext({viewport:{width:1280,height:860}});
 await sembrarLibs(ctx, ['pdfjs','pdfworker']);
+/* Nada de red: lo sembrado basta, y bajar del CDN lo que la prueba no usa
+   es lo que la volvía intermitente dentro de la corrida completa. */
+await sinCDN(ctx);
 const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(4000);

@@ -3,7 +3,7 @@
    Una página vertical dentro de un marco apaisado se lee pequeña si solo
    cabe entera; a lo ancho se lee, y entonces hay que poder desplazarla. */
 import { chromium } from 'playwright';
-import { sembrarLibs } from './libs.mjs';
+import { sembrarLibs, sinCDN } from './libs.mjs';
 import { tocar, elegir } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 /* Vertical a propósito: estas pruebas miran qué pasa al meter una página
@@ -15,6 +15,9 @@ const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
 const ctx=await nav.newContext({viewport:{width:1280,height:860}});
 await sembrarLibs(ctx, ['pdfjs','pdfworker']);
+/* Nada de red: lo sembrado basta, y bajar del CDN lo que la prueba no usa
+   es lo que la volvía intermitente dentro de la corrida completa. */
+await sinCDN(ctx);
 const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(4000);

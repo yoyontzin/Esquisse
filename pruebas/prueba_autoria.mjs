@@ -10,7 +10,7 @@
    que es la proyección: el grupo no tiene por qué mirar un aviso de licencia
    durante la clase. */
 import { chromium } from 'playwright';
-import { sembrarLibs } from './libs.mjs';
+import { sembrarLibs, sinCDN } from './libs.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -19,6 +19,9 @@ const nav = await chromium.launch();
 const ctx = await nav.newContext({viewport:{width:1200,height:860},
                                   acceptDownloads:true, deviceScaleFactor:1});
 await sembrarLibs(ctx, ['jspdf']);
+/* Nada de red: lo sembrado basta, y bajar del CDN lo que la prueba no usa
+   es lo que la volvía intermitente dentro de la corrida completa. */
+await sinCDN(ctx);
 const p = await ctx.newPage();
 const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(BASE+'/?rol=control'); await p.waitForTimeout(2600);
@@ -47,6 +50,36 @@ check('la marca corta identifica autor, versión y copia',
 check('sin número de INDAUTOR, la marca no se lo inventa',
       datos.indautor ? datos.marca.includes(datos.indautor)
                      : !/INDAUTOR/i.test(datos.marca), String(datos.indautor));
+
+/* --- el aviso en la primera línea del archivo ---
+   Los `meta` los lee un navegador, pero quien saca el HTML de dentro de la app
+   o del zip lo abre en un editor de texto, y ahí no se ven. El aviso va antes
+   del DOCTYPE para que sea lo primero que aparezca.
+
+   Y va comprobado que eso no deja al navegador en modo quirks: un comentario
+   antes del DOCTYPE puede cambiar el modelo de caja, y entonces la maquetación
+   entera se descoloca sin dar un solo error. */
+{
+  const crudo = await (await fetch(BASE)).text();
+  const cabeza = crudo.slice(0, 2000);
+  check('el archivo empieza por el aviso, antes del DOCTYPE',
+        crudo.trimStart().startsWith('<!--'), crudo.slice(0,40));
+  check('el aviso va antes que el DOCTYPE',
+        crudo.indexOf('<!--') < crudo.indexOf('<!DOCTYPE'));
+  for (const [q, re] of [['el copyright', /Copyright \(c\) 2026 J\. Rogelio Pérez-Buendía/],
+                         ['el correo', /rogelio\.perez@cimat\.mx/],
+                         ['la página', /cimat\.mx\/~rogelio\.perez/],
+                         ['el ORCID', /0000-0002-7739-4779/],
+                         ['el DOI', /10\.5281\/zenodo\.22654651/],
+                         ['que redistribuir necesita permiso', /permiso ESCRITO|permiso escrito/],
+                         ['que quitar el aviso también', /quitar o cambiar los avisos/],
+                         ['que el registro está en trámite', /INDAUTOR en trámite/]])
+    check('el aviso de cabecera lleva '+q, re.test(cabeza), q);
+}
+/* El comentario delante no puede costar el modo estándar. */
+check('el navegador sigue en modo estándar, no en quirks',
+      (await p.evaluate(()=>document.compatMode)) === 'CSS1Compat',
+      await p.evaluate(()=>document.compatMode));
 
 /* --- en la cabecera del documento, para quien mire el fuente --- */
 const meta = await p.evaluate(()=>{

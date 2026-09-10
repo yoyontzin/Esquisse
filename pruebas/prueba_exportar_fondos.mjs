@@ -3,7 +3,7 @@
    abierto desde el servidor —donde los fondos se piden por red— salían los
    trazos flotando sobre blanco, siempre. */
 import { chromium } from 'playwright';
-import { sembrarLibs } from './libs.mjs';
+import { sembrarLibs, sinCDN } from './libs.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const PDF = process.env.PDF || new URL('./muestra_vertical.pdf', import.meta.url).pathname;
 const ok=[],mal=[];
@@ -11,6 +11,9 @@ const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
 const nav=await chromium.launch();
 const ctx=await nav.newContext({viewport:{width:1280,height:900}, acceptDownloads:true});
 await sembrarLibs(ctx, ['pdfjs','pdfworker']);
+/* Y nada de red para el resto: esta prueba no usa MathJax ni jsPDF, y bajarlas
+   mientras se renderiza el PDF era lo que la tumbaba dentro de la corrida. */
+await sinCDN(ctx);
 const c=await ctx.newPage();
 const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
@@ -24,7 +27,28 @@ await c.waitForFunction(()=>state.nb.pages.length > 1, null,
                         {timeout: 90000, polling: 500}).catch(()=>{});
 await c.waitForTimeout(2000);
 const pags = await c.evaluate(()=>state.nb.pages.length);
-check('el PDF se importó', pags>=3, String(pags));
+/* Cuando esto falla dentro de la corrida completa y sola pasa, la cuenta de
+   páginas no dice nada. Se recoge por qué: si la biblioteca llegó, si el
+   almacén local se llenó, y qué dijo el programa por pantalla. */
+const porQue = pags>=3 ? '' : await c.evaluate(()=>{
+  let cuanto = 0, claves = [];
+  try{ for (let i=0;i<localStorage.length;i++){
+         const k = localStorage.key(i);
+         claves.push(k + ':' + (localStorage.getItem(k)||'').length);
+         cuanto += (localStorage.getItem(k)||'').length; } }catch(e){ claves.push('ilegible '+e.name); }
+  let cabe = 'sí';
+  try{ localStorage.setItem('_prueba_hueco', 'x'.repeat(200000)); localStorage.removeItem('_prueba_hueco'); }
+  catch(e){ cabe = 'NO, ' + e.name; }
+  const t = document.getElementById('toast');
+  return JSON.stringify({
+    libState: typeof libState !== 'undefined' ? libState : 'sin libState',
+    pdfjsEnAlmacen: claves.filter(k=>k.startsWith('lib:')).join(' '),
+    caracteresGuardados: cuanto,
+    cabeMas: cabe,
+    aviso: t ? t.textContent.slice(0,120) : '',
+  });
+});
+check('el PDF se importó', pags>=3, pags + (porQue ? ' — ' + porQue : ''));
 
 // anotar encima, para que el PDF lleve trazos y fondo
 const b=await c.locator('#board').boundingBox();

@@ -43,11 +43,38 @@ async function enDisco(nombre){
    Devuelve false y no rompe si no hay red y tampoco copia en disco: la prueba
    sigue, y fallará por su propia comprobación en vez de por un vencimiento
    sin explicación. */
+/* Corta el CDN para la prueba entera.
+
+   Sembrar las que hacen falta no basta: al arrancar, el programa pide LAS
+   CUATRO, así que las no sembradas se bajan igual. `prueba_exportar_fondos`
+   fallaba por eso dentro de la corrida completa y pasaba sola: sembraba pdf.js
+   y aun así se bajaba MathJax, 2.1 millones de caracteres que van al almacén
+   local por el hilo principal mientras el PDF se está renderizando. Noventa
+   segundos no llegaban, y el aviso se quedaba en «Leyendo el PDF...».
+
+   Cortándolo, lo sembrado sigue sirviendo, lo demás falla rápido y en limpio,
+   y la prueba deja de depender de la red para bibliotecas que no usa. */
+export async function sinCDN(contexto){
+  await contexto.route('https://cdnjs.cloudflare.com/**', r => r.abort());
+}
+
 export async function sembrarLibs(contexto, nombres){
   const guion = [];
   for (const n of nombres){
     try{
-      guion.push(`try{ localStorage.setItem('lib:${n}', ${JSON.stringify(await enDisco(n))}); }catch{}`);
+      /* Doble codificación a propósito, y no es un descuido: el programa guarda
+         en el almacén con `JSON.stringify` y lee con `JSON.parse`, así que el
+         VALOR guardado tiene que ser JSON. La de fuera construye el literal de
+         JavaScript del guion; la de dentro es el valor.
+
+         Con una sola, la siembra escribía el código en crudo, `JSON.parse`
+         reventaba, el programa lo daba por no encontrado y lo bajaba del CDN
+         igual. O sea que esto no sirvió nunca desde que se escribió: las
+         pruebas siguieron bajando las cuatro bibliotecas en cada página, que
+         es justo lo que venía a evitar. Se vio al cortar el CDN, cuando
+         `libState` dio `fail` con la biblioteca sentada en el almacén. */
+      const codigo = await enDisco(n);
+      guion.push(`try{ localStorage.setItem('lib:${n}', ${JSON.stringify(JSON.stringify(codigo))}); }catch{}`);
     }catch(err){
       console.log(`  (aviso: sin ${n} en caché ni red — ${err.message})`);
       return false;

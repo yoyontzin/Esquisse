@@ -1,5 +1,29 @@
 #!/usr/bin/env python3
 """
+===========================================================================
+ESQUISSE — servidor del pizarrón
+===========================================================================
+
+Copyright (c) 2026 J. Rogelio Pérez-Buendía. Todos los derechos reservados.
+
+Autor      J. Rogelio Pérez-Buendía
+Filiación  Centro de Investigación en Matemáticas, A.C., Unidad Mérida
+Correo     rogelio.perez@cimat.mx
+Página     https://www.cimat.mx/~rogelio.perez
+ORCID      0000-0002-7739-4779
+DOI        https://doi.org/10.5281/zenodo.22654651
+Código     https://github.com/yoyontzin/Esquisse
+
+LICENCIA DE EVALUACIÓN, texto completo en LICENCIA.md. Usarlo para dar clase
+es libre, incluso en cursos de paga, y leer y modificar su código para uso
+propio también. Redistribuirlo, venderlo, publicar obras derivadas o quitar
+estos avisos necesita permiso escrito del autor.
+
+Registro ante el INDAUTOR en trámite.
+===========================================================================
+"""
+
+"""
 Servidor de Esquisse. Solo biblioteca estándar: no hay nada que instalar.
 
     python3 pizarron_servidor.py
