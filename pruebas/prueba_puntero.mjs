@@ -3,6 +3,7 @@
    Aquí se comprueba que las tres formas se dibujan distinto, que el color
    manda, que la duración manda, y que la clase ve lo mismo que el profesor. */
 import { chromium } from 'playwright';
+import { elegirPuntero } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -33,7 +34,7 @@ await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2200);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarTinta(); encuadrar(); sync(); });
 
 // --- el panel sale al tomar el puntero y se va al escribir ---
-await c.click('#pointBtn'); await c.waitForTimeout(150);
+await elegirPuntero(c); await c.waitForTimeout(150);
 check('las opciones salen al tomar el puntero',
   await c.evaluate(()=>document.body.classList.contains('conPuntero')));
 
@@ -126,9 +127,9 @@ check('el estilo del puntero viaja a la proyección',
   alla.f==='mano' && alla.c===3 && alla.v===15000, JSON.stringify(alla));
 
 // --- escribir quita el panel de opciones ---
-await c.click('#pointBtn'); await c.waitForTimeout(80);
+await elegirPuntero(c); await c.waitForTimeout(80);
 await c.click('#penBtn'); await c.waitForTimeout(80);
-await c.click('#pointBtn'); await c.waitForTimeout(120);
+await elegirPuntero(c); await c.waitForTimeout(120);
 const caja = await c.evaluate(()=>{const r=document.getElementById('board').getBoundingClientRect();
   return {x:r.left+r.width/2, y:r.top+r.height*0.7};});
 await c.mouse.move(caja.x, caja.y); await c.mouse.down();

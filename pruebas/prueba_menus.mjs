@@ -14,6 +14,9 @@ const ctx = await nav.newContext({viewport:{width:1512,height:945}});
 const p = await ctx.newPage();
 const errs=[]; p.on('pageerror',e=>errs.push(e.message));
 await p.goto(BASE+'/?rol=control'); await p.waitForTimeout(2200);
+/* Los cinco menús viven en Revisar desde que la barra pasó a una sola fila
+   mientras se escribe. Esta prueba los toca directamente, así que entra. */
+await revisar(p);
 
 // --- la segunda fila desapareció ---
 check('ya no hay segunda fila de documento',

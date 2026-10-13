@@ -119,13 +119,24 @@
   .barRow{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;min-width:0}
   /* apretada a propósito: la fila de herramientas tiene que caber de una
      sola línea o se come el alto del pizarrón */
-  #barTools{flex-wrap:wrap;row-gap:5px;gap:7px}
+  #barTools{flex-wrap:wrap;row-gap:5px;gap:3px}
+  /* Escribiendo, la barra es una sola fila. Los cinco menús eran la segunda
+     entera, ellos solos, y son gestión del documento: archivo, páginas, fondo,
+     insertar y vista. Para eso está Revisar, a un toque del asa. */
+  body.escribir #menus{display:none}
   /* 3 px y no 4: con 4 la fila mide 1358 px y en un iPad de 1366 se parte
      en dos alturas por catorce píxeles. */
-  #barTools .grp{gap:3px}
+  /* Los 44 px de toque NO se tocan: con el Pencil no se ve el punto de
+     contacto bajo la punta y por debajo de eso se falla. Lo que se recorta es
+     el aire, que no es destino de nada. */
+  #barTools .grp{gap:2px}
   #barTools button{padding:7px 9px}
   #barTools .swatch{width:23px;height:23px}
-  #barTools input[type=range]{width:66px}
+  /* El deslizador del grosor baja a 48: los botones de más y menos, que sí
+     son destino de toque y siguen a 44, hacen el ajuste fino. Con 66 la fila
+     necesitaba exactamente los 1158 px disponibles en el iPad de 11 pulgadas
+     y envolvía por redondeo. */
+  #barTools input[type=range]{width:48px}
   /* Los disparadores de menú van al final de la fila y siguen la misma regla
      que el resto: con «Nombres» apagado enseñan solo el icono y el triángulo.
      El nombre puesto los engorda 300 px y la fila se parte en dos alturas
@@ -306,6 +317,52 @@
      que acabas de escribir. */
   /* Alto fijo, y el mismo valor que se le resta al lienzo. Sin alto propio la
      banda se estiraba hasta comerse media pantalla, porque su lienzo crece. */
+  /* La barra de navegación y su asa. Las dos se apoyan en el borde de abajo
+     del pizarrón, por encima del dock cuando lo hay (--alzarLupa lo mide en
+     vivo) y por encima de la banda de la lupa cuando está puesta. */
+  body{--pisoLupa:0px}
+  body.conLupa{--pisoLupa:var(--altoLupa,200px)}
+  #navAsa{display:none;position:absolute;z-index:19;left:50%;
+    transform:translateX(-50%);
+    bottom:calc(var(--alzarLupa,0px) + var(--pisoLupa));
+    min-width:0;min-height:0;padding:0 16px;height:20px;line-height:18px;
+    border-radius:9px 9px 0 0;font-size:9.5px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:700;
+    background:var(--chrome-3);color:var(--dim);border:1px solid var(--line);
+    border-bottom:0;cursor:pointer;white-space:nowrap}
+  #navAsa:hover{color:var(--text);background:var(--chrome-2)}
+  body:not(.proyeccion):not(.alumno) #navAsa{display:block}
+  /* En clase no. Ahí el dock ya lleva sus flechas de parada, así que esta
+     barra duplicaría los controles y además taparía 94 px de hoja, porque el
+     dock la empuja hacia arriba. El hueco donde vive sin costar nada existe
+     cuando no hay dock. */
+  body.clase #navAsa, body.clase #navBar{display:none!important}
+  /* Con la barra abierta, el asa sobra: la barra ya lleva su «Ocultar». Los
+     :not() de la regla de arriba pesan, así que esta los repite para ganarle. */
+  body.navegando:not(.proyeccion):not(.alumno) #navAsa{display:none}
+  #navBar{display:none;position:absolute;z-index:20;left:50%;
+    transform:translateX(-50%);
+    bottom:calc(var(--alzarLupa,0px) + var(--pisoLupa) + 6px);
+    align-items:center;gap:10px;padding:7px 10px;border-radius:14px;
+    background:rgba(21,23,27,.96);border:1px solid var(--line);
+    backdrop-filter:saturate(180%) blur(24px);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);max-width:94vw}
+  body.navegando:not(.proyeccion):not(.alumno) #navBar{display:flex}
+  /* Grandes de verdad: se tocan con el lápiz en la mano y con el grupo
+     mirando. Es la diferencia entre acertar y buscar. */
+  #navBar button{min-width:58px;min-height:46px;font-size:19px;line-height:1}
+  #navBar #navCerrar{min-width:0;font-size:11px;padding:0 10px;color:var(--dim)}
+  #navPos{font-size:12.5px;color:var(--dim);min-width:104px;text-align:center;
+    white-space:nowrap}
+  #navBar #pageLbl{font-size:12.5px;color:var(--dim);min-width:52px;
+    text-align:center;white-space:nowrap}
+  .navRot{font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--dim);font-weight:700}
+  .navSep{width:1px;align-self:stretch;background:var(--line);margin:0 2px}
+  /* Los iconos de página vienen de la barra, donde llevaban su palabra al
+     lado; aquí el rótulo del grupo ya lo dice y la palabra sobraría. */
+  #navBar .txt{display:none}
+  #navBar button:disabled{opacity:.32}
   #lupa{--altoLupa:200px;
     display:none;position:absolute;left:0;right:0;bottom:var(--alzarLupa,0px);z-index:18;
     height:var(--altoLupa);
@@ -687,16 +744,12 @@
         <button id="eraseBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m14.4 4.1 5.5 5.5a1.6 1.6 0 0 1 0 2.3l-6.2 6.2H8.3l-4.2-4.2a1.6 1.6 0 0 1 0-2.3l7.9-7.5a1.6 1.6 0 0 1 2.4 0Z"/><path d="m9.1 8 6.6 6.6"/><path d="M4.5 20.6h15"/></svg><span class="txt">Borrador</span></button>
         <button id="shapeBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="3.4" width="11" height="11" rx="1.6"/><circle cx="15.2" cy="15.2" r="5.4"/></svg><span class="txt">Formas</span></button>
         <button id="textBtn" title="Texto y fórmulas LaTeX"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.8 12.4H5.6l2.8 7.2L12.6 4.4h8.6"/><path d="M15.4 12.2h5.8"/></svg><span class="txt">Fórmula</span></button>
-        <button id="lassoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.2 3"><path d="M12 3.6c5 0 8.6 2.9 8.6 6.5S17 16.6 12 16.6 3.4 13.7 3.4 10.1 7 3.6 12 3.6Z"/><path d="M8.6 16.2c-.4 2.4.3 4.3 2.2 4.3 1.5 0 2-1.3 1.2-2.2"/></svg><span class="txt">Lazo</span></button>
-        <button id="fondoPanelBtn" title="Elegir el pizarrón o el papel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M3.2 15.2 8 10.6l4.2 4 3-2.6 4.6 4.2"/><circle cx="15.6" cy="8.6" r="1.5"/></svg><span class="txt">Fondo</span></button>
-        <button id="pointBtn" class="point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><path d="M5.9 5.9 7.6 7.6M16.4 16.4l1.7 1.7M18.1 5.9 16.4 7.6M7.6 16.4 5.9 18.1"/></svg><span class="txt">Puntero</span></button>
         <button id="lupaBtn" title="Lupa: escribe en grande abajo y cae pequeño en el pizarrón" aria-label="Lupa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.6" cy="10.6" r="6"/><path d="M15 15l5.4 5.4"/><path d="M8.2 10.6h4.8M10.6 8.2v4.8"/></svg><span class="txt">Lupa</span></button>
+        <button id="lassoBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="3.2 3"><path d="M12 3.6c5 0 8.6 2.9 8.6 6.5S17 16.6 12 16.6 3.4 13.7 3.4 10.1 7 3.6 12 3.6Z"/><path d="M8.6 16.2c-.4 2.4.3 4.3 2.2 4.3 1.5 0 2-1.3 1.2-2.2"/></svg><span class="txt">Lazo</span></button>
       </div>
       <div class="sep"></div>
       <div class="grp">
-        <button id="pPrev" aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 5.4 8 12l6.6 6.6"/></svg><span class="txt">◀</span></button>
-        <span id="pageLbl" class="mono" style="font-size:12px;min-width:46px;text-align:center">1 / 1</span>
-        <button id="pNext" aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 5.4 16 12l-6.6 6.6"/></svg><span class="txt">▶</span></button>
+        
       </div>
       <div class="sep"></div>
       <div class="grp">
@@ -724,6 +777,20 @@
 <!-- La lupa: escribes en grande aquí abajo y aterriza pequeño en el pizarrón.
      La ventana se recorre sola al acercarte al borde y salta de renglón al
      acabarse el ancho. -->
+<button id="navAsa" title="Ir de una parada a otra">Navegar</button>
+<div id="navBar" role="group" aria-label="Navegación">
+  <span class="navRot">Página</span>
+  <button id="pPrev" aria-label="Página anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.6 5.4 8 12l6.6 6.6"/></svg><span class="txt">◀</span></button>
+        <span id="pageLbl" class="mono" style="font-size:12px;min-width:46px;text-align:center">1 / 1</span>
+        <button id="pNext" aria-label="Página siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 5.4 16 12l-6.6 6.6"/></svg><span class="txt">▶</span></button>
+  <span class="navSep"></span>
+  <span class="navRot">Parada</span>
+  <button id="navPrev" title="Parada anterior">&#8592;</button>
+  <span id="navPos" class="mono"></span>
+  <button id="navNext" title="Parada siguiente">&#8594;</button>
+  <span class="navSep"></span>
+  <button id="navCerrar" title="Ocultar la barra">Ocultar</button>
+</div>
 <div id="lupa">
   <div id="lupaBar">
     <span class="lbl">Lupa</span>
@@ -842,6 +909,7 @@
   <button id="undoRafaga" title="Quita todo lo último que escribiste de un tirón" aria-label="Borrar lo último"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9.4 6.2 4.6 11l4.8 4.8"/><path d="M4.6 11h9.6a5.2 5.2 0 0 1 0 10.4h-2.4"/><path d="M17 3.2l3.6 3.6M20.6 3.2 17 6.8"/></svg><span class="txt">Borrar lo último</span></button>
 </div>
 <div class="menuDesp" id="menuFondo" role="menu" aria-label="Fondo">
+  <button id="fondoPanelBtn" title="Elegir el pizarrón o el papel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.2" y="4.4" width="17.6" height="15.2" rx="2"/><path d="M3.2 15.2 8 10.6l4.2 4 3-2.6 4.6 4.2"/><circle cx="15.6" cy="8.6" r="1.5"/></svg><span class="txt">Ver papeles</span></button>
   <span class="cnt">Pizarrón</span>
   <select id="paper" aria-label="Fondo"></select>
   <span class="cnt">Guía</span>
@@ -864,6 +932,8 @@
   <button id="pasteBtn" aria-label="Pegar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6.4" y="4.6" width="11.2" height="15.8" rx="1.8"/><path d="M9.4 4.6V3.4h5.2v1.2"/><path d="M9.6 11.4h4.8M9.6 15h4.8"/></svg><span class="txt">Pegar</span></button>
 </div>
 <div class="menuDesp" id="menuVista" role="menu" aria-label="Vista">
+  
+  <button id="pointBtn" class="point"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/><path d="M12 3.2v2.4M12 18.4v2.4M3.2 12h2.4M18.4 12h2.4"/><path d="M5.9 5.9 7.6 7.6M16.4 16.4l1.7 1.7M18.1 5.9 16.4 7.6M7.6 16.4 5.9 18.1"/></svg><span class="txt">Puntero</span></button>
   <button id="openProj" aria-label="Proyección"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2.8" y="4.4" width="18.4" height="12" rx="2"/><path d="M8 20.4h8"/><path d="M12 16.4v4"/></svg><span class="txt">Proyección</span></button>
   <button id="full" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.6 9V4.8a1.2 1.2 0 0 1 1.2-1.2H9"/><path d="M15 3.6h4.2a1.2 1.2 0 0 1 1.2 1.2V9"/><path d="M20.4 15v4.2a1.2 1.2 0 0 1-1.2 1.2H15"/><path d="M9 20.4H4.8a1.2 1.2 0 0 1-1.2-1.2V15"/></svg><span class="txt">Pantalla completa</span></button>
   <button id="fit" aria-label="Encuadrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.4" y="4.6" width="17.2" height="14.8" rx="2"/><path d="M8.4 9.6h7.2v4.8H8.4z"/></svg><span class="txt">Encuadrar</span></button>
@@ -2516,7 +2586,7 @@ const toques = () => [...pointers.values()].filter(p => p.pointerType === 'touch
 const ZONA_INTERFAZ = 'button, select, input, label, textarea, a, ' +
   '#bar, #dock, #side, #libList, #texEd, #selBar, #pegarBar, #opcTrazo, ' +
   '#shapeRow, #panelFondo, #bgBar, #pdfEd, #libWrap, #controls, #espera, ' +
-  '#lupaBar, .menuDesp, #opcPuntero';
+  '#lupaBar, .menuDesp, #opcPuntero, #navBar';
 document.addEventListener('touchmove', e => {
   const t = e.target;
   if (t && t.closest && t.closest(ZONA_INTERFAZ)) return;
@@ -3359,6 +3429,32 @@ function dibujarMarcoLupa(ctx, cam){
   ctx.strokeRect(x, y, v.w*cam.s, v.h*cam.s);
   ctx.restore();
 }
+/* ============ la barra de navegación ============ */
+
+/* Dónde estás, en paradas y no en índices de trazo: el profesor piensa en
+   «voy por la segunda», no en «voy por el elemento 37». */
+function textoNav(){
+  const P = pg();
+  const cortes = P.stops.slice().sort((a,b)=>a-b);
+  if (!cortes.length)
+    return P.reveal >= P.items.length ? 'sin paradas' : 'sin paradas todavía';
+  const pasadas = cortes.filter(k => k <= P.reveal).length;
+  if (P.reveal >= P.items.length) return `al final · ${cortes.length} paradas`;
+  return `parada ${pasadas} de ${cortes.length}`;
+}
+function pintarNav(){
+  const bar = document.getElementById('navBar');
+  if (!bar || !bar.offsetParent) return;
+  const P = pg();
+  document.getElementById('navPos').textContent = textoNav();
+  document.getElementById('navPrev').disabled = P.reveal <= 0;
+  document.getElementById('navNext').disabled = P.reveal >= P.items.length;
+}
+function ponerNav(v){
+  document.body.classList.toggle('navegando', v);
+  store.set('navegando', v);
+  if (v) pintarNav();
+}
 function ponerLupa(v){
   document.body.classList.toggle('conLupa', v);
   document.getElementById('lupaBtn').classList.toggle('on', v);
@@ -3609,7 +3705,7 @@ function irAStop(k){
   if (raf){ cancelAnimationFrame(raf); raf = null; }
   playPartial = 0;
   P.reveal = Math.max(0, Math.min(P.items.length, k));
-  marcarPlay(); sync();
+  marcarPlay(); sync(); pintarNav();
 }
 const siguienteCorte = () => { const P=pg(), k=P.stops.find(s=>s>P.reveal);
   return k === undefined ? P.items.length : k; };
@@ -3622,7 +3718,7 @@ const escribirHastaStop = () => playTo(siguienteCorte());
    forma de fallar. El empujón no depende de que el dibujado salga bien. */
 function sync(){
   pushSoon();
-  try{ drawBoard(); drawProj(); drawRibbon(); dibujarLupa(); refreshPages(); }
+  try{ drawBoard(); drawProj(); drawRibbon(); dibujarLupa(); refreshPages(); pintarNav(); }
   catch(err){ console.error('fallo al dibujar', err); }
 }
 
@@ -4799,15 +4895,40 @@ function paintSwatches(){
   [...hlColors.children].forEach((b,i)=> b.classList.toggle('on', i===ui.hlSlot && ui.tool==='hl'));
 }
 /* Coloca el panel flotante debajo del botón que lo abrió, sin salirse. */
-function anclarPanel(panelId, botonId){
+/* Un panel se coloca bajo su botón, sin salirse del pizarrón.
+
+   El recorte contra los bordes depende del ancho del panel, y el ancho no está
+   cuando se abre: el de papeles nace con 478 px y crece a 660 cuando entran
+   sus miniaturas. Anclado con el ancho de antes, se iba 83 px fuera de la
+   pantalla por la izquierda, con tres papeles inalcanzables y ninguna señal de
+   que faltaran. Así que se vuelve a colocar cada vez que cambia de tamaño. */
+const anclados = new Map();      // panel -> botón al que sigue
+let ojoAnclas = null;
+function colocarPanel(panelId, botonId){
   const p = document.getElementById(panelId), b = document.getElementById(botonId);
   const w = document.getElementById('boardWrap');
-  if (!p || !b || !w) return;
+  if (!p || !b || !w || !p.offsetWidth) return;
   const rb = b.getBoundingClientRect(), rw = w.getBoundingClientRect();
-  const ancho = p.offsetWidth || 300;
+  const ancho = p.offsetWidth;
+  const minimo = ancho/2 + 8;
   let x = rb.left + rb.width/2 - rw.left;
-  x = Math.max(ancho/2 + 8, Math.min(Math.max(ancho/2 + 8, rw.width - ancho/2 - 8), x));
+  x = Math.max(minimo, Math.min(Math.max(minimo, rw.width - minimo), x));
   p.style.left = Math.round(x) + 'px';
+}
+function anclarPanel(panelId, botonId){
+  const p = document.getElementById(panelId);
+  if (!p) return;
+  anclados.set(panelId, botonId);
+  if (window.ResizeObserver){
+    if (!ojoAnclas) ojoAnclas = new ResizeObserver(entradas => {
+      for (const e of entradas){
+        const boton = anclados.get(e.target.id);
+        if (boton) colocarPanel(e.target.id, boton);
+      }
+    });
+    ojoAnclas.observe(p);
+  }
+  colocarPanel(panelId, botonId);
 }
 function setTool(t, opts){
   // en el arranque no cuenta como segundo toque, o las opciones saldrían solas
@@ -5242,6 +5363,11 @@ on('acCorreo', () => {
   location.href = url;
 });
 
+on('navAsa',    ()=>ponerNav(true));
+on('navCerrar', ()=>ponerNav(false));
+on('navPrev',   ()=>{ prevStop(); pintarNav(); });
+on('navNext',   ()=>{ nextStop(); pintarNav(); });
+
 on('revisarBtn', alternarRevisar);
 on('cintaAsa', alternarRevisar);
 on('ladoBtn', e => {
@@ -5543,7 +5669,7 @@ on('fondoPanelBtn', ()=>{
   document.body.classList.remove('conTrazo','conFormas','conPuntero');
   cerrarMenus();
   const abierto = document.body.classList.toggle('conFondoPanel');
-  if (abierto){ marcarPapelElegido(); setTimeout(()=>anclarPanel('panelFondo','fondoPanelBtn'),0); }
+  if (abierto){ marcarPapelElegido(); setTimeout(()=>anclarPanel('panelFondo','mFondo'),0); }
 });
 on('fondoBtn', ()=>{
   if (!pg().bgImg){ toast('Esta página no tiene imagen ni PDF de fondo.'); return; }
@@ -5661,7 +5787,7 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
      casos se llevaban por delante `conectar()`, `fitAll()` y `sync()`: la
      aplicación abría, se veía normal, los botones estaban, y el iPad no
      enlazaba nunca. Sin ningún síntoma, que en un aula es lo peor que puede
-     pasar. Los dos casos están comprobados en `prueba_arranque.mjs`. */
+     pasar. */
   let idx = [];
   try{
     const guardado = await store.get('index');
@@ -5774,6 +5900,7 @@ window.addEventListener('beforeunload', ()=>{ clearTimeout(saveTimer); persist()
       pintarPuntero(); });
     store.get('lupaAlto').then(v=>{ if (v) ponerAltoLupa(v); });
     store.get('lupa').then(v=>{ if (v) ponerLupa(true); });
+    store.get('navegando').then(v=>{ if (v) ponerNav(true); });
     if (!hasStore) document.getElementById('savedLbl').textContent = 'solo memoria';
     /* Una primera medida al arrancar, para que el aviso de «sin enlace» ya
        nazca debajo de la barra aunque nadie cambie de modo ni gire el iPad. */

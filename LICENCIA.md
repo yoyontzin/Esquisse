@@ -31,7 +31,7 @@ dónde acaba el programa y poder responder por lo que lleva mi nombre.
 Si te sirve en un trabajo publicado o en material de curso:
 
 > Pérez-Buendía, J. Rogelio. *Esquisse: pizarrón digital para la enseñanza de
-> las matemáticas.* 2026. https://github.com/yoyontzin/Pizarron
+> las matemáticas.* 2026. https://github.com/yoyontzin/Esquisse
 
 ## Sin garantía
 

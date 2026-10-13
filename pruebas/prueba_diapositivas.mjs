@@ -4,7 +4,7 @@
 import { chromium } from 'playwright';
 import { revisar } from './modo.mjs';
 import { sembrarLibs, sinCDN } from './libs.mjs';
-import { tocar, elegir } from './menu.mjs';
+import { tocar, elegir, abrirNavegacion } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -68,6 +68,9 @@ check('se escribe sobre la diapositiva', await c.evaluate(()=>pg().items.length)
 check('la diapositiva sigue de fondo y no se borra', await c.evaluate(()=>!!pg().bgImg));
 
 // --- pasar a la siguiente y escribir ahí ---
+/* Las páginas se fueron a la barra de navegación, que nace cerrada:
+   escribiendo, lo único a la vista es un asa de 20 px. */
+await abrirNavegacion(c);
 await c.click('#pNext'); await c.waitForTimeout(800);
 check('se pasa a la siguiente diapositiva', await c.evaluate(()=>state.pi)===1);
 check('la nueva llega limpia de anotaciones', await c.evaluate(()=>pg().items.length)===0);

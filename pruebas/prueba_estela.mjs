@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { tocar, elegir } from './menu.mjs';
+import { tocar, elegir, elegirPuntero } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -9,7 +9,7 @@ const errs=[]; c.on('pageerror',e=>errs.push(e.message));
 await c.goto(BASE+'/?rol=control'); await c.waitForTimeout(2500);
 await c.evaluate(()=>{ state.nb=newNotebook(); state.pi=0; olvidarHistorial(); olvidarTinta(); sync(); });
 await elegir(c, 'paper', 'gis'); await c.waitForTimeout(700);
-await c.click('#pointBtn'); await c.waitForTimeout(200);
+await elegirPuntero(c); await c.waitForTimeout(200);
 const b=await c.locator('#board').boundingBox();
 
 // escribir "x2+1" con el puntero: varios trazos separados por pausas

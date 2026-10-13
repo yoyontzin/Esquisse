@@ -54,8 +54,29 @@ const r = await fetch(BASE+'/fondos/'+encodeURIComponent(uno)+'.jpg');
 check('los fondos se sirven como archivo', r.ok && (+r.headers.get('content-length'))>10000,
       r.status+' '+r.headers.get('content-length')+' bytes');
 
-// y al recargar sigue todo
-await c.reload(); await c.waitForTimeout(6000);
+/* Y al recargar sigue todo.
+
+   La recarga se reintenta porque dentro de la corrida completa, con la máquina
+   cargada, `reload` devolvía «net::ERR_ABORTED; maybe frame was detached» y
+   tumbaba la prueba entera antes de comprobar nada. Sola pasaba siempre. No es
+   del programa: es que recargar una página que va a pedir seis fondos por red
+   compite con las otras pruebas. Se espera a la condición, no al reloj. */
+const recargar = async () => {
+  for (let intento = 1; intento <= 3; intento++){
+    try{
+      await c.reload({waitUntil:'load', timeout:60000});
+      break;
+    }catch(err){
+      if (intento === 3) throw err;
+      console.log(`  (recarga abortada, intento ${intento}: ${err.message.split('\n')[0]})`);
+      await c.waitForTimeout(1500);
+    }
+  }
+  await c.waitForFunction(()=>typeof state !== 'undefined' && state.nb &&
+                              state.nb.pages.length > 1 && !!pg().bgImg,
+                          null, {timeout:60000, polling:500}).catch(()=>{});
+};
+await recargar(); await c.waitForTimeout(2000);
 const tras = await c.evaluate(()=>({paginas:state.nb.pages.length,
   fondo:!!pg().bgImg, items:pg().items.length,
   src:(pg().bgImg&&pg().bgImg.src||'').slice(0,10)}));

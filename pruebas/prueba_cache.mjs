@@ -4,7 +4,7 @@
    Aquí se compara, tras cada operación, lo que se ve con la caché contra lo
    que se vería rasterizando de cero. Tienen que salir idénticos. */
 import { chromium } from 'playwright';
-import { tocar, elegir } from './menu.mjs';
+import { tocar, elegir, abrirNavegacion } from './menu.mjs';
 const BASE = process.env.BASE || 'http://127.0.0.1:8778';
 const ok=[],mal=[];
 const check=(n,c,e='')=>(c?ok:mal).push(n+(e?' — '+e:''));
@@ -84,6 +84,9 @@ check('tras encuadrar', await coincide());
 await tocar(c, 'pAdd'); await c.waitForTimeout(500);
 await trazo(200, 220, 500, 420); await c.waitForTimeout(300);
 check('en la página nueva', await coincide());
+/* Las páginas se fueron a la barra de navegación, que nace cerrada:
+   escribiendo, lo único a la vista es un asa de 20 px. */
+await abrirNavegacion(c);
 await c.click('#pPrev'); await c.waitForTimeout(600);
 check('al volver a la página anterior', await coincide());
 
