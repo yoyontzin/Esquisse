@@ -81,6 +81,58 @@ check('el navegador sigue en modo estándar, no en quirks',
       (await p.evaluate(()=>document.compatMode)) === 'CSS1Compat',
       await p.evaluate(()=>document.compatMode));
 
+/* --- la obra no lleva imágenes de nadie más ---
+
+   Las tres texturas de fondo venían incrustadas como fotografías JPEG, 270 KB
+   en base64, casi la mitad del archivo. La del pizarrón de gis salió de una
+   plantilla de Keynote, y la licencia de Apple cubre usar sus plantillas
+   dentro de presentaciones, no extraer sus imágenes para otro programa que se
+   distribuye aparte.
+
+   Ahora se dibujan por código. Esto vigila que no vuelva a entrar ninguna:
+   una fotografía incrustada es fácil de pegar y difícil de ver, y de ella
+   depende poder firmar que la obra no incluye obra de terceros. */
+{
+  const crudo = await (await fetch(BASE)).text();
+  const incrustadas = [...crudo.matchAll(/data:image\/([a-z+]+);base64,([A-Za-z0-9+/=]+)/g)]
+    .map(m => ({tipo: m[1], kb: +(m[2].length / 1024).toFixed(1)}));
+  check('el programa no lleva ninguna imagen incrustada',
+        incrustadas.length === 0, JSON.stringify(incrustadas));
+  /* Y que las texturas existan de verdad, no que se hayan perdido por el
+     camino: quitarlas sin sustituirlas también deja esta prueba en verde. */
+  const tex = await p.evaluate(()=>{
+    const salida = {};
+    for (const k of ['gis','verdetex','vintage']){
+      const c = texturaDe(k);
+      if (!c){ salida[k] = null; continue; }
+      const g = c.getContext('2d');
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      // ¿tiene relieve, o es un color plano?
+      let min = 255, max = 0, suma = 0;
+      for (let i = 0; i < d.length; i += 4 * 97){
+        min = Math.min(min, d[i]); max = Math.max(max, d[i]); suma += d[i];
+      }
+      salida[k] = {w: c.width, h: c.height, rango: max - min};
+    }
+    return salida;
+  });
+  for (const k of ['gis','verdetex','vintage']){
+    check(`la textura ${k} se dibuja`, !!tex[k] && tex[k].w > 100, JSON.stringify(tex[k]));
+    check(`y tiene relieve, no es un color plano`,
+          !!tex[k] && tex[k].rango > 18, JSON.stringify(tex[k]));
+  }
+  /* Misma semilla, mismo dibujo: si cambiara en cada carga, el pizarrón se
+     vería distinto cada mañana y la caché de tinta se invalidaría sin motivo. */
+  const dosVeces = await p.evaluate(()=>{
+    const uno = texturaDe('gis').toDataURL('image/png').length;
+    texCache.delete('gis');
+    const dos = texturaDe('gis').toDataURL('image/png').length;
+    return {uno, dos};
+  });
+  check('y sale igual cada vez que se dibuja',
+        dosVeces.uno === dosVeces.dos, JSON.stringify(dosVeces));
+}
+
 /* --- en la cabecera del documento, para quien mire el fuente --- */
 const meta = await p.evaluate(()=>{
   const m = n => { const e = document.querySelector(`meta[name="${n}"]`); return e ? e.content : null; };
